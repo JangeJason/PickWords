@@ -3,7 +3,7 @@ import SwiftUI
 struct MainTabView: View {
     var body: some View {
         TabView {
-            CameraPlaceholderView()
+            CameraView()
                 .tabItem {
                     Label("拍照", systemImage: "camera.fill")
                 }
@@ -22,27 +22,6 @@ struct MainTabView: View {
 }
 
 // MARK: - 占位视图
-
-struct CameraPlaceholderView: View {
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                Image(systemName: "camera.fill")
-                    .font(.system(size: 60))
-                    .foregroundStyle(.blue)
-                
-                Text("拍照识物")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                Text("拍摄物品，AI 自动识别英文单词")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            .navigationTitle("拍照")
-        }
-    }
-}
 
 struct CardListPlaceholderView: View {
     var body: some View {
