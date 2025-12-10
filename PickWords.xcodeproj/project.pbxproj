@@ -11,6 +11,8 @@
 		A1000001233D000100000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D000000000002 /* ContentView.swift */; };
 		A1000001233D000100000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000001233D000000000003 /* Assets.xcassets */; };
 		A1000001233D000100000004 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000001233D000000000004 /* Preview Assets.xcassets */; };
+		A1000001233D000100000005 /* WordCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D000000000005 /* WordCard.swift */; };
+		A1000001233D000100000006 /* Collection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D000000000006 /* Collection.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +21,8 @@
 		A1000001233D000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A1000001233D000000000003 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1000001233D000000000004 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		A1000001233D000000000005 /* WordCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCard.swift; sourceTree = "<group>"; };
+		A1000001233D000000000006 /* Collection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Collection.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,6 +84,8 @@
 		A1000001233DGRP000000005 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				A1000001233D000000000005 /* WordCard.swift */,
+				A1000001233D000000000006 /* Collection.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -188,6 +194,8 @@
 			files = (
 				A1000001233D000100000002 /* ContentView.swift in Sources */,
 				A1000001233D000100000001 /* PickWordsApp.swift in Sources */,
+				A1000001233D000100000005 /* WordCard.swift in Sources */,
+				A1000001233D000100000006 /* Collection.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

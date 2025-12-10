@@ -5,7 +5,8 @@ import SwiftData
 struct PickWordsApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            // Models will be added here
+            WordCard.self,
+            Collection.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
