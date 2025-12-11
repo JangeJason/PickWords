@@ -8,7 +8,9 @@ struct PhotoPreviewView: View {
     let onDismiss: () -> Void
     
     @State private var isAnalyzing = false
+    @State private var analysisStatus = ""
     @State private var recognitionResult: RecognitionResult?
+    @State private var extractedImage: UIImage?  // 抠图后的主体
     @State private var errorMessage: String?
     @State private var showResult = false
     @State private var showSaveSuccess = false
@@ -30,7 +32,7 @@ struct PhotoPreviewView: View {
                         VStack(spacing: 12) {
                             ProgressView()
                                 .scaleEffect(1.2)
-                            Text("AI 正在识别...")
+                            Text(analysisStatus)
                                 .foregroundStyle(.secondary)
                         }
                         .padding()
@@ -98,13 +100,15 @@ struct PhotoPreviewView: View {
                 if let result = recognitionResult {
                     RecognitionResultView(
                         result: result,
-                        image: image,
+                        originalImage: image,
+                        extractedImage: extractedImage,
                         onSave: {
                             saveWordCard(result: result)
                         },
                         onRetry: {
                             showResult = false
                             recognitionResult = nil
+                            extractedImage = nil
                         }
                     )
                 }
@@ -120,7 +124,9 @@ struct PhotoPreviewView: View {
     }
     
     private func saveWordCard(result: RecognitionResult) {
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+        // 优先使用抠图后的图片，否则使用原图
+        let imageToSave = extractedImage ?? image
+        guard let imageData = imageToSave.jpegData(compressionQuality: 0.8) else {
             return
         }
         
@@ -142,10 +148,30 @@ struct PhotoPreviewView: View {
     private func analyzeImage() {
         isAnalyzing = true
         errorMessage = nil
+        analysisStatus = "正在提取主体..."
         
         Task {
             do {
-                let result = try await GeminiService.shared.recognizeImage(image)
+                // 第一步：抠图提取主体
+                var imageToRecognize = image
+                do {
+                    let extracted = try await VisionService.shared.extractSubject(from: image)
+                    imageToRecognize = extracted
+                    await MainActor.run {
+                        extractedImage = extracted
+                        analysisStatus = "AI 正在识别..."
+                    }
+                } catch {
+                    // 抠图失败，使用原图继续识别
+                    print("抠图失败，使用原图: \(error.localizedDescription)")
+                    await MainActor.run {
+                        extractedImage = nil
+                        analysisStatus = "AI 正在识别..."
+                    }
+                }
+                
+                // 第二步：AI 识别
+                let result = try await GeminiService.shared.recognizeImage(imageToRecognize)
                 await MainActor.run {
                     recognitionResult = result
                     isAnalyzing = false
@@ -164,20 +190,48 @@ struct PhotoPreviewView: View {
 // MARK: - 识别结果视图
 struct RecognitionResultView: View {
     let result: RecognitionResult
-    let image: UIImage
+    let originalImage: UIImage
+    let extractedImage: UIImage?
     let onSave: () -> Void
     let onRetry: () -> Void
+    
+    // 显示的图片：优先显示抠图后的主体
+    private var displayImage: UIImage {
+        extractedImage ?? originalImage
+    }
     
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    // 图片
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxHeight: 250)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    // 图片（抠图后的主体或原图）
+                    ZStack {
+                        // 棋盘格背景（显示透明区域）
+                        if extractedImage != nil {
+                            CheckerboardBackground()
+                        }
+                        
+                        Image(uiImage: displayImage)
+                            .resizable()
+                            .scaledToFit()
+                    }
+                    .frame(maxHeight: 250)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.gray.opacity(0.2), lineWidth: 1)
+                    )
+                    
+                    // 抠图提示
+                    if extractedImage != nil {
+                        HStack {
+                            Image(systemName: "sparkles")
+                                .foregroundStyle(.green)
+                            Text("已智能提取主体")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                     
                     // 单词卡片
                     VStack(spacing: 16) {
@@ -257,6 +311,34 @@ struct RecognitionResultView: View {
             }
             .navigationTitle("识别结果")
             .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+
+// MARK: - 棋盘格背景（显示透明区域）
+struct CheckerboardBackground: View {
+    let size: CGFloat = 10
+    
+    var body: some View {
+        Canvas { context, canvasSize in
+            let rows = Int(canvasSize.height / size) + 1
+            let cols = Int(canvasSize.width / size) + 1
+            
+            for row in 0..<rows {
+                for col in 0..<cols {
+                    let isWhite = (row + col) % 2 == 0
+                    let rect = CGRect(
+                        x: CGFloat(col) * size,
+                        y: CGFloat(row) * size,
+                        width: size,
+                        height: size
+                    )
+                    context.fill(
+                        Path(rect),
+                        with: .color(isWhite ? .white : .gray.opacity(0.3))
+                    )
+                }
+            }
         }
     }
 }
