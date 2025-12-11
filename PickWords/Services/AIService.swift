@@ -11,8 +11,8 @@ struct RecognitionResult: Codable {
 }
 
 /// 通义千问 VL 服务
-final class GeminiService {
-    static let shared = GeminiService()
+final class AIService {
+    static let shared = AIService()
     
     private let baseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
     

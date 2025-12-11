@@ -171,7 +171,7 @@ struct PhotoPreviewView: View {
                 }
                 
                 // 第二步：AI 识别
-                let result = try await GeminiService.shared.recognizeImage(imageToRecognize)
+                let result = try await AIService.shared.recognizeImage(imageToRecognize)
                 await MainActor.run {
                     recognitionResult = result
                     isAnalyzing = false
