@@ -74,14 +74,6 @@
 			path = PickWords;
 			sourceTree = "<group>";
 		};
-		A1000001233DGRP000000012 /* Config */ = {
-			isa = PBXGroup;
-			children = (
-				A1000001233D00000000000E /* Secrets.swift */,
-			);
-			path = Config;
-			sourceTree = "<group>";
-		};
 		A1000001233DGRP000000002 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -107,23 +99,6 @@
 				A1000001233DGRP000000011 /* Settings */,
 			);
 			path = Views;
-			sourceTree = "<group>";
-		};
-		A1000001233DGRP000000011 /* Settings */ = {
-			isa = PBXGroup;
-			children = (
-				A1000001233D00000000000D /* APIKeySettingView.swift */,
-			);
-			path = Settings;
-			sourceTree = "<group>";
-		};
-		A1000001233DGRP000000010 /* Camera */ = {
-			isa = PBXGroup;
-			children = (
-				A1000001233D000000000008 /* CameraView.swift */,
-				A1000001233D000000000009 /* PhotoPreviewView.swift */,
-			);
-			path = Camera;
 			sourceTree = "<group>";
 		};
 		A1000001233DGRP000000005 /* Models */ = {
@@ -167,6 +142,31 @@
 				A1000001233D000000000004 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		A1000001233DGRP000000010 /* Camera */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001233D000000000008 /* CameraView.swift */,
+				A1000001233D000000000009 /* PhotoPreviewView.swift */,
+			);
+			path = Camera;
+			sourceTree = "<group>";
+		};
+		A1000001233DGRP000000011 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001233D00000000000D /* APIKeySettingView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		A1000001233DGRP000000012 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001233D00000000000E /* Secrets.swift */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -385,6 +385,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"PickWords/Resources/Preview Content\"";
+				DEVELOPMENT_TEAM = 6Q6KB7R678;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "PickWords 需要使用相机拍摄物品以识别英文单词";
@@ -415,6 +416,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"PickWords/Resources/Preview Content\"";
+				DEVELOPMENT_TEAM = 6Q6KB7R678;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "PickWords 需要使用相机拍摄物品以识别英文单词";

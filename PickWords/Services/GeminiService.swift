@@ -1,7 +1,7 @@
 import Foundation
 import UIKit
 
-/// Gemini API 识别结果
+/// AI 识别结果
 struct RecognitionResult: Codable {
     let word: String              // 英文单词
     let phonetic: String          // 音标
@@ -10,11 +10,11 @@ struct RecognitionResult: Codable {
     let exampleTranslation: String // 例句中文翻译
 }
 
-/// Gemini 1.5 Flash 服务
+/// 通义千问 VL 服务
 final class GeminiService {
     static let shared = GeminiService()
     
-    private let baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    private let baseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
     
     private init() {}
     
@@ -27,7 +27,7 @@ final class GeminiService {
     private func getAPIKey() -> String? {
         // 优先使用内置 Key
         let builtInKey = Secrets.geminiAPIKey
-        if !builtInKey.isEmpty {
+        if !builtInKey.isEmpty && builtInKey != "YOUR_API_KEY_HERE" {
             return builtInKey
         }
         // 其次使用用户配置的 Key
@@ -37,107 +37,121 @@ final class GeminiService {
     /// 识别图片中的物体并返回单词信息
     func recognizeImage(_ image: UIImage) async throws -> RecognitionResult {
         guard let apiKey = getAPIKey() else {
-            throw GeminiError.apiKeyNotConfigured
+            throw AIError.apiKeyNotConfigured
         }
         
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            throw GeminiError.imageProcessingFailed
+        guard let imageData = image.jpegData(compressionQuality: 0.7) else {
+            throw AIError.imageProcessingFailed
         }
         
         let base64Image = imageData.base64EncodedString()
         
         // 构建请求
-        let url = URL(string: "\(baseURL)?key=\(apiKey)")!
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: URL(string: baseURL)!)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 30
         
         let prompt = """
-        分析这张图片中最主要的物体，返回以下 JSON 格式（只返回 JSON，不要其他内容）：
+        你是一个英语单词学习助手。请识别图片中的**实际物品**（如耳机、杯子、手机等），而不是物品上的图案、logo或卡通形象。
+
+        规则：
+        1. 重点识别物品本身是什么，忽略装饰性元素
+        2. 如果物品有特殊主题（如卡通主题），可以在单词中体现，格式如 "themed earbuds"
+        3. 单词应该是日常实用的英语词汇
+
+        请返回以下 JSON 格式（只返回 JSON，不要其他内容）：
         {
-          "word": "英文单词（小写）",
-          "phonetic": "音标（如 /ˈkɒfi/）",
-          "translation": "中文释义",
-          "exampleSentence": "包含该单词的英文例句",
-          "exampleTranslation": "例句的中文翻译"
+            "word": "英文单词或短语（描述物品本身）",
+            "phonetic": "音标（国际音标格式）",
+            "translation": "中文释义",
+            "exampleSentence": "一个使用该单词的英文例句",
+            "exampleTranslation": "例句的中文翻译"
         }
-        
-        要求：
-        1. 识别图片中最显眼的物体
-        2. 例句要贴合图片场景，自然地道
-        3. 只返回 JSON，不要 markdown 代码块
         """
         
         let requestBody: [String: Any] = [
-            "contents": [
+            "model": "qwen-vl-plus",
+            "messages": [
                 [
-                    "parts": [
-                        ["text": prompt],
+                    "role": "user",
+                    "content": [
                         [
-                            "inline_data": [
-                                "mime_type": "image/jpeg",
-                                "data": base64Image
+                            "type": "image_url",
+                            "image_url": [
+                                "url": "data:image/jpeg;base64,\(base64Image)"
                             ]
+                        ],
+                        [
+                            "type": "text",
+                            "text": prompt
                         ]
                     ]
                 ]
-            ],
-            "generationConfig": [
-                "temperature": 0.4,
-                "topK": 32,
-                "topP": 1,
-                "maxOutputTokens": 1024
             ]
         ]
         
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         
-        // 发送请求
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw GeminiError.networkError
+            throw AIError.networkError
         }
         
         guard httpResponse.statusCode == 200 else {
+            // 尝试解析错误信息
             if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let error = errorJson["error"] as? [String: Any],
                let message = error["message"] as? String {
-                throw GeminiError.apiError(message)
+                throw AIError.apiError(message)
             }
-            throw GeminiError.apiError("HTTP \(httpResponse.statusCode)")
+            throw AIError.apiError("HTTP \(httpResponse.statusCode)")
         }
         
-        // 解析响应
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let candidates = json["candidates"] as? [[String: Any]],
-              let firstCandidate = candidates.first,
-              let content = firstCandidate["content"] as? [String: Any],
-              let parts = content["parts"] as? [[String: Any]],
-              let firstPart = parts.first,
-              let text = firstPart["text"] as? String else {
-            throw GeminiError.parseError
+        // 解析响应（OpenAI 兼容格式）
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let choices = json["choices"] as? [[String: Any]],
+              let firstChoice = choices.first,
+              let message = firstChoice["message"] as? [String: Any],
+              let content = message["content"] as? String else {
+            throw AIError.parseError
         }
         
-        // 清理 JSON 字符串（移除可能的 markdown 代码块标记）
-        let cleanedText = text
-            .replacingOccurrences(of: "```json", with: "")
-            .replacingOccurrences(of: "```", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        // 提取 JSON（处理可能的 markdown 代码块）
+        let jsonString = extractJSON(from: content)
         
-        // 解析结果
-        guard let resultData = cleanedText.data(using: .utf8) else {
-            throw GeminiError.parseError
+        guard let jsonData = jsonString.data(using: .utf8),
+              let result = try? JSONDecoder().decode(RecognitionResult.self, from: jsonData) else {
+            print("解析失败，原始响应: \(content)")
+            throw AIError.parseError
         }
         
-        let result = try JSONDecoder().decode(RecognitionResult.self, from: resultData)
         return result
+    }
+    
+    /// 从文本中提取 JSON
+    private func extractJSON(from text: String) -> String {
+        var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // 移除 markdown 代码块标记
+        if result.hasPrefix("```json") {
+            result = String(result.dropFirst(7))
+        } else if result.hasPrefix("```") {
+            result = String(result.dropFirst(3))
+        }
+        
+        if result.hasSuffix("```") {
+            result = String(result.dropLast(3))
+        }
+        
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
-// MARK: - 错误类型
-
-enum GeminiError: LocalizedError {
+/// AI 错误类型
+enum AIError: LocalizedError {
     case apiKeyNotConfigured
     case imageProcessingFailed
     case networkError
@@ -147,15 +161,15 @@ enum GeminiError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .apiKeyNotConfigured:
-            return "请先配置 Gemini API Key"
+            return "API Key 未配置"
         case .imageProcessingFailed:
             return "图片处理失败"
         case .networkError:
-            return "网络请求失败"
+            return "网络连接失败"
         case .apiError(let message):
             return "API 错误: \(message)"
         case .parseError:
-            return "解析响应失败"
+            return "响应解析失败"
         }
     }
 }

@@ -12,7 +12,7 @@ struct APIKeySettingView: View {
             Form {
                 Section {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Gemini API Key")
+                        Text("通义千问 API Key")
                             .font(.headline)
                         
                         HStack {
@@ -56,11 +56,11 @@ struct APIKeySettingView: View {
                 }
                 
                 Section {
-                    Link(destination: URL(string: "https://aistudio.google.com/app/apikey")!) {
+                    Link(destination: URL(string: "https://dashscope.console.aliyun.com/apiKey")!) {
                         HStack {
                             Image(systemName: "key.fill")
                                 .foregroundStyle(.blue)
-                            Text("获取 Gemini API Key")
+                            Text("获取通义千问 API Key")
                             Spacer()
                             Image(systemName: "arrow.up.right.square")
                                 .foregroundStyle(.secondary)
@@ -69,7 +69,7 @@ struct APIKeySettingView: View {
                 } header: {
                     Text("帮助")
                 } footer: {
-                    Text("访问 Google AI Studio 免费获取 API Key")
+                    Text("访问阿里云 DashScope 控制台获取 API Key")
                 }
             }
             .navigationTitle("API 设置")
