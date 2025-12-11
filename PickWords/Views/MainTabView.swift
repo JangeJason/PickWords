@@ -8,9 +8,9 @@ struct MainTabView: View {
                     Label("拍照", systemImage: "camera.fill")
                 }
             
-            CardListPlaceholderView()
+            WordCardListView()
                 .tabItem {
-                    Label("卡片", systemImage: "rectangle.stack.fill")
+                    Label("单词", systemImage: "rectangle.stack.fill")
                 }
             
             CollectionListPlaceholderView()
@@ -22,27 +22,6 @@ struct MainTabView: View {
 }
 
 // MARK: - 占位视图
-
-struct CardListPlaceholderView: View {
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                Image(systemName: "rectangle.stack.fill")
-                    .font(.system(size: 60))
-                    .foregroundStyle(.green)
-                
-                Text("我的单词卡")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                Text("查看已保存的单词卡片")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            .navigationTitle("卡片")
-        }
-    }
-}
 
 struct CollectionListPlaceholderView: View {
     var body: some View {

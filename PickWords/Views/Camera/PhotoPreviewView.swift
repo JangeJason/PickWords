@@ -1,6 +1,9 @@
 import SwiftUI
+import SwiftData
 
 struct PhotoPreviewView: View {
+    @Environment(\.modelContext) private var modelContext
+    
     let image: UIImage
     let onDismiss: () -> Void
     
@@ -8,6 +11,7 @@ struct PhotoPreviewView: View {
     @State private var recognitionResult: RecognitionResult?
     @State private var errorMessage: String?
     @State private var showResult = false
+    @State private var showSaveSuccess = false
     
     var body: some View {
         NavigationStack {
@@ -96,9 +100,7 @@ struct PhotoPreviewView: View {
                         result: result,
                         image: image,
                         onSave: {
-                            // TODO: PR #10 实现保存到数据库
-                            showResult = false
-                            onDismiss()
+                            saveWordCard(result: result)
                         },
                         onRetry: {
                             showResult = false
@@ -107,7 +109,34 @@ struct PhotoPreviewView: View {
                     )
                 }
             }
+            .alert("保存成功", isPresented: $showSaveSuccess) {
+                Button("继续拍照") {
+                    onDismiss()
+                }
+            } message: {
+                Text("单词卡片已保存到词库")
+            }
         }
+    }
+    
+    private func saveWordCard(result: RecognitionResult) {
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            return
+        }
+        
+        let wordCard = WordCard(
+            imageData: imageData,
+            word: result.word,
+            phonetic: result.phonetic,
+            translation: result.translation,
+            exampleSentence: result.exampleSentence,
+            exampleTranslation: result.exampleTranslation
+        )
+        
+        modelContext.insert(wordCard)
+        
+        showResult = false
+        showSaveSuccess = true
     }
     
     private func analyzeImage() {
