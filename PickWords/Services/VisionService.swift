@@ -36,10 +36,13 @@ final class VisionService {
                     let ciImage = CIImage(cgImage: cgImage)
                     let maskImage = CIImage(cvPixelBuffer: mask)
                     
-                    let filter = CIFilter.blendWithMask()
-                    filter.inputImage = ciImage
-                    filter.maskImage = maskImage
-                    filter.backgroundImage = CIImage.empty()
+                    guard let filter = CIFilter(name: "CIBlendWithMask") else {
+                        continuation.resume(throwing: VisionError.imageProcessingFailed)
+                        return
+                    }
+                    filter.setValue(ciImage, forKey: kCIInputImageKey)
+                    filter.setValue(maskImage, forKey: kCIInputMaskImageKey)
+                    filter.setValue(CIImage.empty(), forKey: kCIInputBackgroundImageKey)
                     
                     guard let outputImage = filter.outputImage else {
                         continuation.resume(throwing: VisionError.imageProcessingFailed)
