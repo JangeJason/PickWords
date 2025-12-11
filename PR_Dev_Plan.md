@@ -423,6 +423,105 @@ struct AIRecognitionResult: Codable {
 
 ---
 
+## 阶段四·优化：AI 与体验打磨（新增）
+
+> 说明：下面这些 PR 是在 **M3（卡片管理）已基本可用** 的基础上，对 AI 调用、贴纸效果和整体体验做的一轮增强。可以与后续收藏集功能穿插开发。
+
+### PR #21: AI 服务命名与文档对齐
+
+**分支**: `chore/ai-service-rename`
+
+**任务清单**:
+- [ ] 将 `GeminiService` 等命名统一为更通用且与供应商一致的名称（如 `AIService` 或 `QwenService`），同时更新单例、API Key 相关命名。
+- [ ] 同步更新 `README.md` / `DEVELOPMENT_PLAN.md` / 本文件中的描述，使其与实际使用的多模态大模型（当前为通义千问 Qwen‑VL）一致。
+- [ ] 更新 `Config/Secrets.swift.template` 中字段名和注释说明，避免“Gemini/OpenAI”等历史命名混用。
+
+**验收标准**: 项目编译通过；AI 相关类型/字段命名与实际供应商一致，文档描述不再混乱。
+
+---
+
+### PR #22: AI 调用健壮性与错误体验优化
+
+**分支**: `feat/ai-error-handling`
+
+**任务清单**:
+- [ ] 按 dashscope compatible 模式的实际响应结构，正确解析 `choices[0].message.content`（支持数组形式，从中提取 `type == "text"` 的内容）。
+- [ ] 增强 `extractJSON(from:)`，支持去除 ```json/``` 包裹、宽松提取大括号之间的 JSON 文本，对模型输出“小跑题”有一定容错。
+- [ ] 在 `PhotoPreviewView` 中根据不同 `AIError`（如 API Key 未配置、网络错误、解析错误）展示差异化提示和重试建议。
+- [ ] 在 DEBUG 环境下打印原始内容，便于调试 prompt 和解析逻辑。
+
+**验收标准**: 常见异常场景下，用户可以看到明确原因和下一步提示，不再只得到“解析失败”这类模糊错误。
+
+---
+
+### PR #23: 单词贴纸合成与展示完善
+
+**分支**: `feat/word-sticker-enhanced`
+
+**任务清单**:
+- [ ] 新增 `Components/WordStickerView.swift`，负责渲染圆角背景 + 单词/emoji 的贴纸组件。
+- [ ] 新增或完善 `Services/ImageService.swift`：接收原始 `UIImage` 与识别结果，结合 `VisionService` 检测主体/显著区域，计算贴纸位置并合成新图。
+- [ ] 修改 `PhotoPreviewView.saveWordCard`：在保存时尝试生成贴纸版图片，成功则写入 `WordCard.stickerImageData`，失败时回退为仅保存原图。
+- [ ] 修改 `WordCardCell` / `WordCardDetailView`：优先展示 `stickerImageData`，没有时使用原始 `imageData`。
+
+**验收标准**: 新保存的卡片在列表和详情中都能看到“单词贴在物体上”的图片，Vision 失败不会影响主流程。
+
+---
+
+### PR #24: 收藏集列表与详情 UI 落地
+
+**分支**: `feat/collections-ui`
+
+**任务清单**:
+- [ ] 创建 `CollectionListView`，使用 `@Query` 显示所有 `Collection`，展示名称、emoji 和卡片数量。
+- [ ] 实现“新建收藏集”入口（简单弹窗输入名称与 emoji 文本即可）。
+- [ ] 创建 `CollectionDetailView`，展示该收藏集下的所有 `WordCard`，复用现有卡片网格组件。
+- [ ] 在 `MainTabView` 中用 `CollectionListView` 替换占位的 `CollectionListPlaceholderView`。
+
+**验收标准**: “收藏” Tab 不再是占位视图，用户可以创建简单的收藏集并查看其中的卡片。
+
+---
+
+### PR #25: 卡片归类与筛选打通
+
+**分支**: `feat/card-collection-link`
+
+**任务清单**:
+- [ ] 在识别结果保存流程中（`RecognitionResultView`），增加“选择收藏集”步骤，将所选 `Collection.id` 写入 `WordCard.collectionId`。
+- [ ] 在 `WordCardDetailView` 中展示当前所属收藏集，并提供修改入口（收藏集选择器）。
+- [ ] 在 `WordCardListView` 中增加按收藏集筛选能力（例如顶部 SegmentedControl 或工具栏菜单）。
+
+**验收标准**: 新建卡片可以直接归类到收藏集；已有卡片可以修改归属；列表和收藏集详情视图中的数据保持一致。
+
+---
+
+### PR #26: 基础闪卡复习模式实现
+
+**分支**: `feat/flashcard-review-basic`
+
+**任务清单**:
+- [ ] 实现 `FlashcardView`，支持左右滑动浏览卡片和点击翻面（图像正面 / 单词+释义反面）。
+- [ ] 在“单词” Tab（`WordCardListView`）中添加进入闪卡模式的入口，默认使用当前筛选条件下的卡片集合。
+- [ ] 在闪卡视图中显示简单进度指示（如 `3/12`），支持从头到尾浏览一轮。
+
+**验收标准**: 用户可以从列表进入闪卡视图，以“图片+翻面”的形式复习当前词库中的卡片。
+
+---
+
+### PR #27: 视图复用与细节体验优化
+
+**分支**: `chore/ui-refactor-polish`
+
+**任务清单**:
+- [ ] 抽取复用组件（如 `WordCardContentView`），统一 `RecognitionResultView` 与 `WordCardDetailView` 内部“单词 + 音标 + 释义 + 例句”的展示逻辑。
+- [ ] 为删除卡片等危险操作增加确认弹窗，避免误删。
+- [ ] 在 `CameraView` 中增加一个“最近卡片缩略图”或快捷入口，快速跳转到最新保存的单词卡片（可选）。
+- [ ] 清理不再使用的占位视图和重复代码，保持视图层整洁。
+
+**验收标准**: 相关视图代码更易维护，重复 UI 减少，交互细节更可靠友好。
+
+---
+
 ## 阶段五：场景收藏集
 
 ### PR #14: 收藏集列表页
