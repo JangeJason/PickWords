@@ -102,8 +102,8 @@ struct PhotoPreviewView: View {
                         result: result,
                         originalImage: image,
                         extractedImage: extractedImage,
-                        onSave: {
-                            saveWordCard(result: result)
+                        onSave: { collectionId in
+                            saveWordCard(result: result, collectionId: collectionId)
                         },
                         onRetry: {
                             showResult = false
@@ -123,7 +123,7 @@ struct PhotoPreviewView: View {
         }
     }
     
-    private func saveWordCard(result: RecognitionResult) {
+    private func saveWordCard(result: RecognitionResult, collectionId: UUID?) {
         // 优先使用抠图后的图片，否则使用原图
         let imageToSave = extractedImage ?? image
         guard let imageData = imageToSave.jpegData(compressionQuality: 0.8) else {
@@ -136,7 +136,8 @@ struct PhotoPreviewView: View {
             phonetic: result.phonetic,
             translation: result.translation,
             exampleSentence: result.exampleSentence,
-            exampleTranslation: result.exampleTranslation
+            exampleTranslation: result.exampleTranslation,
+            collectionId: collectionId
         )
         
         modelContext.insert(wordCard)
@@ -192,12 +193,20 @@ struct RecognitionResultView: View {
     let result: RecognitionResult
     let originalImage: UIImage
     let extractedImage: UIImage?
-    let onSave: () -> Void
+    let onSave: (UUID?) -> Void  // 传递选中的收藏集 ID
     let onRetry: () -> Void
+    
+    @Query(sort: \Collection.createdAt, order: .reverse) private var collections: [Collection]
+    @State private var selectedCollectionId: UUID?
+    @State private var showCollectionPicker = false
     
     // 显示的图片：优先显示抠图后的主体
     private var displayImage: UIImage {
         extractedImage ?? originalImage
+    }
+    
+    private var selectedCollection: Collection? {
+        collections.first { $0.id == selectedCollectionId }
     }
     
     var body: some View {
@@ -280,6 +289,33 @@ struct RecognitionResultView: View {
                     .background(.regularMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     
+                    // 收藏集选择
+                    Button {
+                        showCollectionPicker = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "folder")
+                                .foregroundStyle(.blue)
+                            
+                            if let collection = selectedCollection {
+                                Text("\(collection.icon) \(collection.name)")
+                                    .foregroundStyle(.primary)
+                            } else {
+                                Text("选择收藏集（可选）")
+                                    .foregroundStyle(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding()
+                        .background(.regularMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    
                     // 按钮
                     HStack(spacing: 16) {
                         Button {
@@ -295,7 +331,7 @@ struct RecognitionResultView: View {
                         }
                         
                         Button {
-                            onSave()
+                            onSave(selectedCollectionId)
                         } label: {
                             Label("保存", systemImage: "square.and.arrow.down")
                                 .font(.headline)
@@ -311,6 +347,70 @@ struct RecognitionResultView: View {
             }
             .navigationTitle("识别结果")
             .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showCollectionPicker) {
+                CollectionPickerView(selectedId: $selectedCollectionId)
+            }
+        }
+    }
+}
+
+// MARK: - 收藏集选择器
+struct CollectionPickerView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var selectedId: UUID?
+    
+    @Query(sort: \Collection.createdAt, order: .reverse) private var collections: [Collection]
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                // 不选择收藏集
+                Button {
+                    selectedId = nil
+                    dismiss()
+                } label: {
+                    HStack {
+                        Text("📋")
+                            .font(.title2)
+                        Text("不归类")
+                        Spacer()
+                        if selectedId == nil {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(.blue)
+                        }
+                    }
+                }
+                .foregroundStyle(.primary)
+                
+                // 收藏集列表
+                ForEach(collections) { collection in
+                    Button {
+                        selectedId = collection.id
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Text(collection.icon)
+                                .font(.title2)
+                            Text(collection.name)
+                            Spacer()
+                            if selectedId == collection.id {
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(.blue)
+                            }
+                        }
+                    }
+                    .foregroundStyle(.primary)
+                }
+            }
+            .navigationTitle("选择收藏集")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("完成") {
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 }
