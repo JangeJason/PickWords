@@ -39,4 +39,5 @@ fastlane/test_output
 # Secrets - 不要提交 API Key
 *.secret
 .env
-Secrets.swift
+**/Secrets.swift
+**/Config/Secrets.swift

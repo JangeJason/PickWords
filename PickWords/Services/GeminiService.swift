@@ -18,14 +18,25 @@ final class GeminiService {
     
     private init() {}
     
-    /// 检查是否已配置 API Key
+    /// 检查是否已配置 API Key（内置或用户配置）
     var isConfigured: Bool {
-        KeychainService.shared.getGeminiAPIKey() != nil
+        getAPIKey() != nil
+    }
+    
+    /// 获取 API Key（优先使用内置，其次使用用户配置）
+    private func getAPIKey() -> String? {
+        // 优先使用内置 Key
+        let builtInKey = Secrets.geminiAPIKey
+        if !builtInKey.isEmpty {
+            return builtInKey
+        }
+        // 其次使用用户配置的 Key
+        return KeychainService.shared.getGeminiAPIKey()
     }
     
     /// 识别图片中的物体并返回单词信息
     func recognizeImage(_ image: UIImage) async throws -> RecognitionResult {
-        guard let apiKey = KeychainService.shared.getGeminiAPIKey() else {
+        guard let apiKey = getAPIKey() else {
             throw GeminiError.apiKeyNotConfigured
         }
         
