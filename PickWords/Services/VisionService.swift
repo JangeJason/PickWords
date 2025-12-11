@@ -12,7 +12,10 @@ final class VisionService {
     /// 主体抠图 - 使用 iOS 17+ 的 Subject Lifting API
     @available(iOS 17.0, *)
     func extractSubject(from image: UIImage) async throws -> UIImage {
-        guard let cgImage = image.cgImage else {
+        // 先将图片转为正确方向的版本
+        let normalizedImage = normalizeImageOrientation(image)
+        
+        guard let cgImage = normalizedImage.cgImage else {
             throw VisionError.imageProcessingFailed
         }
         
@@ -70,6 +73,18 @@ final class VisionService {
                 continuation.resume(throwing: error)
             }
         }
+    }
+    
+    /// 修正图片方向
+    private func normalizeImageOrientation(_ image: UIImage) -> UIImage {
+        guard image.imageOrientation != .up else { return image }
+        
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return normalizedImage ?? image
     }
     
     /// 检测图片中的主要物体区域

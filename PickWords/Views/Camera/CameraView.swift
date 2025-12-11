@@ -95,12 +95,12 @@ struct CameraView: View {
                 APIKeySettingView()
             }
             .onAppear {
-                isAPIKeyConfigured = GeminiService.shared.isConfigured
+                isAPIKeyConfigured = AIService.shared.isConfigured
             }
             .onChange(of: showAPIKeySetting) { _, newValue in
                 if !newValue {
                     // 设置页面关闭后刷新状态
-                    isAPIKeyConfigured = GeminiService.shared.isConfigured
+                    isAPIKeyConfigured = AIService.shared.isConfigured
                 }
             }
             .sheet(isPresented: $showCamera) {
