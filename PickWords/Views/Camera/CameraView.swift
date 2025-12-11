@@ -6,6 +6,8 @@ struct CameraView: View {
     @State private var showPhotoPicker = false
     @State private var capturedImage: UIImage?
     @State private var showPreview = false
+    @State private var showAPIKeySetting = false
+    @State private var isAPIKeyConfigured = false
     
     var body: some View {
         NavigationStack {
@@ -26,6 +28,25 @@ struct CameraView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                
+                // API Key 未配置提示
+                if !isAPIKeyConfigured {
+                    Button {
+                        showAPIKeySetting = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.orange)
+                            Text("请先配置 API Key")
+                                .foregroundStyle(.primary)
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding()
+                        .background(.orange.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                }
                 
                 Spacer()
                 
@@ -61,6 +82,27 @@ struct CameraView: View {
                 .padding(.bottom, 40)
             }
             .navigationTitle("拍照")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showAPIKeySetting = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                }
+            }
+            .sheet(isPresented: $showAPIKeySetting) {
+                APIKeySettingView()
+            }
+            .onAppear {
+                isAPIKeyConfigured = GeminiService.shared.isConfigured
+            }
+            .onChange(of: showAPIKeySetting) { _, newValue in
+                if !newValue {
+                    // 设置页面关闭后刷新状态
+                    isAPIKeyConfigured = GeminiService.shared.isConfigured
+                }
+            }
             .sheet(isPresented: $showCamera) {
                 ImagePicker(image: $capturedImage, sourceType: .camera)
                     .ignoresSafeArea()

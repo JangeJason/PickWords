@@ -16,6 +16,11 @@
 		A1000001233D000100000007 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D000000000007 /* MainTabView.swift */; };
 		A1000001233D000100000008 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D000000000008 /* CameraView.swift */; };
 		A1000001233D000100000009 /* PhotoPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D000000000009 /* PhotoPreviewView.swift */; };
+		A1000001233D00010000000A /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D00000000000A /* KeychainService.swift */; };
+		A1000001233D00010000000B /* GeminiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D00000000000B /* GeminiService.swift */; };
+		A1000001233D00010000000C /* VisionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D00000000000C /* VisionService.swift */; };
+		A1000001233D00010000000D /* APIKeySettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D00000000000D /* APIKeySettingView.swift */; };
+		A1000001233D00010000000E /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D00000000000E /* Secrets.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +34,11 @@
 		A1000001233D000000000007 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		A1000001233D000000000008 /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
 		A1000001233D000000000009 /* PhotoPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPreviewView.swift; sourceTree = "<group>"; };
+		A1000001233D00000000000A /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		A1000001233D00000000000B /* GeminiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiService.swift; sourceTree = "<group>"; };
+		A1000001233D00000000000C /* VisionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionService.swift; sourceTree = "<group>"; };
+		A1000001233D00000000000D /* APIKeySettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeySettingView.swift; sourceTree = "<group>"; };
+		A1000001233D00000000000E /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,9 +68,18 @@
 				A1000001233DGRP000000005 /* Models */,
 				A1000001233DGRP000000006 /* Services */,
 				A1000001233DGRP000000007 /* Components */,
+				A1000001233DGRP000000012 /* Config */,
 				A1000001233DGRP000000008 /* Resources */,
 			);
 			path = PickWords;
+			sourceTree = "<group>";
+		};
+		A1000001233DGRP000000012 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001233D00000000000E /* Secrets.swift */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		A1000001233DGRP000000002 /* Products */ = {
@@ -85,8 +104,17 @@
 				A1000001233D000000000002 /* ContentView.swift */,
 				A1000001233D000000000007 /* MainTabView.swift */,
 				A1000001233DGRP000000010 /* Camera */,
+				A1000001233DGRP000000011 /* Settings */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		A1000001233DGRP000000011 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001233D00000000000D /* APIKeySettingView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		A1000001233DGRP000000010 /* Camera */ = {
@@ -110,6 +138,9 @@
 		A1000001233DGRP000000006 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A1000001233D00000000000A /* KeychainService.swift */,
+				A1000001233D00000000000B /* GeminiService.swift */,
+				A1000001233D00000000000C /* VisionService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -216,6 +247,11 @@
 				A1000001233D000100000007 /* MainTabView.swift in Sources */,
 				A1000001233D000100000008 /* CameraView.swift in Sources */,
 				A1000001233D000100000009 /* PhotoPreviewView.swift in Sources */,
+				A1000001233D00010000000A /* KeychainService.swift in Sources */,
+				A1000001233D00010000000B /* GeminiService.swift in Sources */,
+				A1000001233D00010000000C /* VisionService.swift in Sources */,
+				A1000001233D00010000000D /* APIKeySettingView.swift in Sources */,
+				A1000001233D00010000000E /* Secrets.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
