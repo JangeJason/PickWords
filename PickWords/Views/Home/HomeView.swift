@@ -17,6 +17,10 @@ struct HomeView: View {
         }
     }
     
+    @State private var cameraButtonScale: CGFloat = 1.0
+    @State private var cameraButtonRotation: Double = 0
+    @State private var pulseAnimation = false
+    
     var body: some View {
         ZStack {
             // 背景 - 浅灰色点阵
@@ -41,14 +45,23 @@ struct HomeView: View {
         .sheet(item: $selectedCard) { card in
             WordCardDetailView(wordCard: card)
         }
+        .onAppear {
+            startPulseAnimation()
+        }
     }
     
     // MARK: - 顶部区域
     private var headerView: some View {
-        HStack {
+        HStack(alignment: .top) {
+            // 左侧占位（平衡布局）
+            Circle()
+                .fill(.clear)
+                .frame(width: 44, height: 44)
+                .padding(.leading, 20)
+            
             Spacer()
             
-            // 中间 - 日期和今日单词数
+            // 中间 - 日期和今日单词数（真正居中）
             VStack(spacing: 6) {
                 Text(formattedDate)
                     .font(.system(size: 28, weight: .bold, design: .rounded))
@@ -65,8 +78,8 @@ struct HomeView: View {
             userAvatar
                 .padding(.trailing, 20)
         }
-        .padding(.top, 60)
-        .padding(.bottom, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 16)
     }
     
     // 格式化日期
@@ -139,25 +152,85 @@ struct HomeView: View {
         .padding(.top, 20)
     }
     
-    // MARK: - 底部相机按钮
+    // MARK: - 底部相机按钮（精美动效）
     private var cameraButton: some View {
         Button {
-            showCamera = true
+            // 点击动画
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                cameraButtonScale = 0.85
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                    cameraButtonScale = 1.0
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                showCamera = true
+            }
         } label: {
             ZStack {
-                // 外圈
+                // 外层脉冲光环
                 Circle()
-                    .fill(AppTheme.pink)
+                    .stroke(AppTheme.pink.opacity(0.3), lineWidth: 2)
+                    .frame(width: 90, height: 90)
+                    .scaleEffect(pulseAnimation ? 1.3 : 1.0)
+                    .opacity(pulseAnimation ? 0 : 0.6)
+                
+                // 中层光晕
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [AppTheme.pink.opacity(0.3), AppTheme.pink.opacity(0)],
+                            center: .center,
+                            startRadius: 30,
+                            endRadius: 55
+                        )
+                    )
+                    .frame(width: 110, height: 110)
+                
+                // 主按钮
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [AppTheme.pink, Color(hex: "FF8FAB")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .frame(width: 70, height: 70)
-                    .shadow(color: AppTheme.pink.opacity(0.4), radius: 12, y: 6)
+                    .shadow(color: AppTheme.pink.opacity(0.5), radius: 15, y: 8)
+                
+                // 内部高光
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [.white.opacity(0.4), .clear],
+                            startPoint: .top,
+                            endPoint: .center
+                        )
+                    )
+                    .frame(width: 70, height: 70)
+                    .clipShape(
+                        Circle()
+                            .offset(y: -5)
+                    )
                 
                 // 相机图标
                 Image(systemName: "camera.fill")
-                    .font(.system(size: 28))
+                    .font(.system(size: 26, weight: .medium))
                     .foregroundStyle(.white)
+                    .shadow(color: .black.opacity(0.1), radius: 2, y: 1)
             }
+            .scaleEffect(cameraButtonScale)
         }
-        .padding(.bottom, 40)
+        .padding(.bottom, 50)
+    }
+    
+    // 脉冲动画
+    private func startPulseAnimation() {
+        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) {
+            pulseAnimation = true
+        }
     }
 }
 
