@@ -430,16 +430,25 @@ struct RecognitionResultView: View {
         }
     }
     
-    // MARK: - 物品贴纸
+    // MARK: - 物品贴纸（异型，无底片）
     private var objectSticker: some View {
-        Image(uiImage: displayImage)
-            .resizable()
-            .scaledToFit()
-            .frame(maxHeight: 200)
-            .padding(6)
-            .background(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
+        ZStack {
+            // 白边效果：稍大一点的白色轮廓
+            Image(uiImage: displayImage)
+                .resizable()
+                .scaledToFit()
+                .frame(maxHeight: 200)
+                .colorMultiply(.white)
+                .blur(radius: 2)
+                .scaleEffect(1.03)
+            
+            // 主体图片
+            Image(uiImage: displayImage)
+                .resizable()
+                .scaledToFit()
+                .frame(maxHeight: 200)
+        }
+        .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
     }
     
     // MARK: - 单词标签贴纸
