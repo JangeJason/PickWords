@@ -7,124 +7,247 @@ struct PhotoPreviewView: View {
     let image: UIImage
     let onDismiss: () -> Void
     
-    @State private var isAnalyzing = false
-    @State private var analysisStatus = ""
+    @State private var isExtracting = true
+    @State private var extractedImage: UIImage?
+    @State private var edgeLightPhase: CGFloat = 0
+    @State private var showCropView = false
+    @State private var showRecognitionResult = false
     @State private var recognitionResult: RecognitionResult?
-    @State private var extractedImage: UIImage?  // 抠图后的主体
+    @State private var isRecognizing = false
     @State private var errorMessage: String?
-    @State private var showResult = false
     @State private var showSaveSuccess = false
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // 照片预览
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(.black)
+        ZStack {
+            // 背景：原图模糊
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .blur(radius: 20)
+                .ignoresSafeArea()
+            
+            // 暗色遮罩
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+            
+            VStack {
+                Spacer()
                 
-                // 底部操作栏
-                VStack(spacing: 16) {
-                    if isAnalyzing {
-                        // 分析中状态
-                        VStack(spacing: 12) {
-                            ProgressView()
-                                .scaleEffect(1.2)
-                            Text(analysisStatus)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding()
-                    } else if let error = errorMessage {
-                        // 错误状态
-                        VStack(spacing: 12) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.title)
-                                .foregroundStyle(.orange)
-                            Text(error)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                            Button("重试") {
-                                analyzeImage()
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                        .padding()
-                    } else {
-                        // 操作按钮
-                        HStack(spacing: 20) {
-                            // 重拍按钮
-                            Button {
-                                onDismiss()
-                            } label: {
-                                Label("重拍", systemImage: "arrow.counterclockwise")
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(.gray.opacity(0.15))
-                                    .foregroundStyle(.primary)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                            }
-                            
-                            // 识别按钮
-                            Button {
-                                analyzeImage()
-                            } label: {
-                                Label("识别", systemImage: "sparkles")
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(.blue)
-                                    .foregroundStyle(.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                            }
-                        }
-                        .padding(.horizontal)
+                // 主体展示区
+                if isExtracting {
+                    // 正在提取主体
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(.white)
+                        Text("正在识别物品...")
+                            .font(.system(size: 16, design: .rounded))
+                            .foregroundStyle(.white)
                     }
-                }
-                .padding()
-                .background(.ultraThinMaterial)
-            }
-            .navigationTitle("照片预览")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("取消") {
-                        onDismiss()
+                } else if let extracted = extractedImage {
+                    // 显示抠出的主体 + 边缘光效
+                    ZStack {
+                        // 主体图片
+                        Image(uiImage: extracted)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 400)
+                        
+                        // 边缘流动光效
+                        EdgeGlowEffect(image: extracted, phase: edgeLightPhase)
+                            .frame(maxHeight: 400)
                     }
+                    .onAppear {
+                        startEdgeAnimation()
+                    }
+                } else {
+                    // 提取失败，显示原图
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: 400)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
                 }
+                
+                Spacer()
+                
+                // 底部控制区
+                bottomControls
             }
-            .fullScreenCover(isPresented: $showResult) {
-                if let result = recognitionResult {
-                    RecognitionResultView(
-                        result: result,
-                        originalImage: image,
-                        extractedImage: extractedImage,
-                        onSave: { collectionId in
-                            saveWordCard(result: result, collectionId: collectionId)
-                        },
-                        onRetry: {
-                            showResult = false
-                            recognitionResult = nil
-                            extractedImage = nil
-                        }
-                    )
-                }
+        }
+        .statusBar(hidden: true)
+        .onAppear {
+            extractSubject()
+        }
+        .fullScreenCover(isPresented: $showCropView) {
+            ImageCropView(image: image) { croppedImage in
+                // 用裁剪后的图片重新提取主体
+                showCropView = false
+                extractSubject(from: croppedImage)
+            } onCancel: {
+                showCropView = false
             }
-            .alert("保存成功", isPresented: $showSaveSuccess) {
-                Button("继续拍照") {
+        }
+        .fullScreenCover(isPresented: $showRecognitionResult) {
+            if let result = recognitionResult {
+                RecognitionResultView(
+                    result: result,
+                    originalImage: image,
+                    extractedImage: extractedImage,
+                    onSave: { collectionId in
+                        saveWordCard(result: result, collectionId: collectionId)
+                    },
+                    onRetry: {
+                        showRecognitionResult = false
+                        recognitionResult = nil
+                    }
+                )
+            }
+        }
+        .alert("保存成功", isPresented: $showSaveSuccess) {
+            Button("继续拍照") {
+                onDismiss()
+            }
+        } message: {
+            Text("单词卡片已保存到词库")
+        }
+    }
+    
+    // MARK: - 底部控制按钮
+    private var bottomControls: some View {
+        VStack(spacing: 0) {
+            // 提示文字
+            if !isExtracting && extractedImage != nil {
+                Text("已识别物品，确认后继续")
+                    .font(.system(size: 14, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .padding(.bottom, 20)
+            }
+            
+            // 按钮区域
+            HStack(spacing: 50) {
+                // 返回按钮
+                Button {
                     onDismiss()
+                } label: {
+                    Circle()
+                        .fill(.gray.opacity(0.6))
+                        .frame(width: 56, height: 56)
+                        .overlay(
+                            Image(systemName: "xmark")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundStyle(.white)
+                        )
                 }
-            } message: {
-                Text("单词卡片已保存到词库")
+                
+                // 确认按钮
+                Button {
+                    confirmAndRecognize()
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color(hex: "4ECDC4"), Color(hex: "44A08D")],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 72, height: 72)
+                            .shadow(color: Color(hex: "4ECDC4").opacity(0.5), radius: 12, y: 6)
+                        
+                        if isRecognizing {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                }
+                .disabled(isExtracting || isRecognizing)
+                .opacity((isExtracting || isRecognizing) ? 0.6 : 1)
+                
+                // 裁剪按钮
+                Button {
+                    showCropView = true
+                } label: {
+                    Circle()
+                        .fill(.gray.opacity(0.6))
+                        .frame(width: 56, height: 56)
+                        .overlay(
+                            Image(systemName: "crop")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundStyle(.white)
+                        )
+                }
+            }
+            .padding(.bottom, 50)
+        }
+        .padding(.horizontal)
+        .padding(.top, 20)
+        .background(
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.5)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+    }
+    
+    // MARK: - 提取主体
+    private func extractSubject(from sourceImage: UIImage? = nil) {
+        let imageToProcess = sourceImage ?? image
+        isExtracting = true
+        
+        Task {
+            do {
+                let extracted = try await VisionService.shared.extractSubject(from: imageToProcess)
+                await MainActor.run {
+                    extractedImage = extracted
+                    isExtracting = false
+                }
+            } catch {
+                await MainActor.run {
+                    extractedImage = nil
+                    isExtracting = false
+                }
             }
         }
     }
     
+    // MARK: - 边缘光动画
+    private func startEdgeAnimation() {
+        withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
+            edgeLightPhase = 1
+        }
+    }
+    
+    // MARK: - 确认并识别
+    private func confirmAndRecognize() {
+        isRecognizing = true
+        
+        Task {
+            do {
+                let imageToRecognize = extractedImage ?? image
+                let result = try await AIService.shared.recognizeImage(imageToRecognize)
+                await MainActor.run {
+                    recognitionResult = result
+                    isRecognizing = false
+                    showRecognitionResult = true
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isRecognizing = false
+                }
+            }
+        }
+    }
+    
+    // MARK: - 保存单词卡
     private func saveWordCard(result: RecognitionResult, collectionId: UUID?) {
-        // 优先使用抠图后的图片，否则使用原图
         let imageToSave = extractedImage ?? image
         guard let imageData = imageToSave.jpegData(compressionQuality: 0.8) else {
             return
@@ -142,49 +265,174 @@ struct PhotoPreviewView: View {
         
         modelContext.insert(wordCard)
         
-        showResult = false
+        showRecognitionResult = false
         showSaveSuccess = true
     }
+}
+
+// MARK: - 边缘流动光效
+struct EdgeGlowEffect: View {
+    let image: UIImage
+    let phase: CGFloat
     
-    private func analyzeImage() {
-        isAnalyzing = true
-        errorMessage = nil
-        analysisStatus = "正在提取主体..."
-        
-        Task {
-            do {
-                // 第一步：抠图提取主体
-                var imageToRecognize = image
-                do {
-                    let extracted = try await VisionService.shared.extractSubject(from: image)
-                    imageToRecognize = extracted
-                    await MainActor.run {
-                        extractedImage = extracted
-                        analysisStatus = "AI 正在识别..."
-                    }
-                } catch {
-                    // 抠图失败，使用原图继续识别
-                    print("抠图失败，使用原图: \(error.localizedDescription)")
-                    await MainActor.run {
-                        extractedImage = nil
-                        analysisStatus = "AI 正在识别..."
-                    }
-                }
+    var body: some View {
+        GeometryReader { geometry in
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .hidden()
+                .overlay(
+                    // 白色边缘光
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .colorMultiply(.white)
+                        .blur(radius: 3)
+                        .opacity(0.8)
+                        .mask(
+                            // 流动光效遮罩
+                            AngularGradient(
+                                gradient: Gradient(colors: [
+                                    .white.opacity(0),
+                                    .white.opacity(0),
+                                    .white,
+                                    .white,
+                                    .white.opacity(0),
+                                    .white.opacity(0)
+                                ]),
+                                center: .center,
+                                startAngle: .degrees(Double(360 * phase)),
+                                endAngle: .degrees(Double(360 * phase) + 90)
+                            )
+                        )
+                )
+        }
+    }
+}
+
+// MARK: - 图片裁剪视图
+struct ImageCropView: View {
+    let image: UIImage
+    let onCrop: (UIImage) -> Void
+    let onCancel: () -> Void
+    
+    @State private var cropRect = CGRect(x: 50, y: 100, width: 250, height: 250)
+    @State private var imageSize = CGSize.zero
+    
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            
+            VStack {
+                // 标题
+                Text("拖动选择目标物品")
+                    .font(.system(size: 18, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white)
+                    .padding(.top, 60)
                 
-                // 第二步：AI 识别
-                let result = try await AIService.shared.recognizeImage(imageToRecognize)
-                await MainActor.run {
-                    recognitionResult = result
-                    isAnalyzing = false
-                    showResult = true
+                Spacer()
+                
+                // 图片和裁剪框
+                GeometryReader { geometry in
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: geometry.size.width, maxHeight: geometry.size.height)
+                        .background(
+                            GeometryReader { imageGeometry in
+                                Color.clear.onAppear {
+                                    imageSize = imageGeometry.size
+                                }
+                            }
+                        )
+                        .overlay(
+                            // 裁剪框
+                            CropOverlay(cropRect: $cropRect, bounds: geometry.size)
+                        )
                 }
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    isAnalyzing = false
+                .padding()
+                
+                Spacer()
+                
+                // 底部按钮
+                HStack(spacing: 50) {
+                    Button {
+                        onCancel()
+                    } label: {
+                        Circle()
+                            .fill(.gray.opacity(0.6))
+                            .frame(width: 56, height: 56)
+                            .overlay(
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundStyle(.white)
+                            )
+                    }
+                    
+                    Button {
+                        cropImage()
+                    } label: {
+                        Circle()
+                            .fill(Color(hex: "4ECDC4"))
+                            .frame(width: 72, height: 72)
+                            .overlay(
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 28, weight: .bold))
+                                    .foregroundStyle(.white)
+                            )
+                    }
                 }
+                .padding(.bottom, 50)
             }
         }
+    }
+    
+    private func cropImage() {
+        // 简化版裁剪，实际裁剪需要计算坐标映射
+        let cropped = image // 暂时返回原图
+        onCrop(cropped)
+    }
+}
+
+// MARK: - 裁剪框覆盖层
+struct CropOverlay: View {
+    @Binding var cropRect: CGRect
+    let bounds: CGSize
+    
+    var body: some View {
+        ZStack {
+            // 暗色遮罩
+            Rectangle()
+                .fill(.black.opacity(0.5))
+                .mask(
+                    Rectangle()
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .frame(width: cropRect.width, height: cropRect.height)
+                                .position(x: cropRect.midX, y: cropRect.midY)
+                                .blendMode(.destinationOut)
+                        )
+                )
+            
+            // 裁剪框边框
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(.white, lineWidth: 2)
+                .frame(width: cropRect.width, height: cropRect.height)
+                .position(x: cropRect.midX, y: cropRect.midY)
+        }
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    let newX = min(max(cropRect.width / 2, cropRect.midX + value.translation.width), bounds.width - cropRect.width / 2)
+                    let newY = min(max(cropRect.height / 2, cropRect.midY + value.translation.height), bounds.height - cropRect.height / 2)
+                    cropRect = CGRect(
+                        x: newX - cropRect.width / 2,
+                        y: newY - cropRect.height / 2,
+                        width: cropRect.width,
+                        height: cropRect.height
+                    )
+                }
+        )
     }
 }
 
