@@ -9,7 +9,6 @@ struct PhotoPreviewView: View {
     
     @State private var isExtracting = true
     @State private var extractedImage: UIImage?
-    @State private var edgeLightPhase: CGFloat = 0
     @State private var showCropView = false
     @State private var showRecognitionResult = false
     @State private var recognitionResult: RecognitionResult?
@@ -19,15 +18,8 @@ struct PhotoPreviewView: View {
     
     var body: some View {
         ZStack {
-            // 背景：原图模糊
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .blur(radius: 20)
-                .ignoresSafeArea()
-            
-            // 暗色遮罩
-            Color.black.opacity(0.3)
+            // 背景：白色点阵（与首页一致）
+            DotPatternBackground()
                 .ignoresSafeArea()
             
             VStack {
@@ -39,27 +31,18 @@ struct PhotoPreviewView: View {
                     VStack(spacing: 16) {
                         ProgressView()
                             .scaleEffect(1.5)
-                            .tint(.white)
+                            .tint(AppTheme.textSecondary)
                         Text("正在识别物品...")
                             .font(.system(size: 16, design: .rounded))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(AppTheme.textSecondary)
                     }
                 } else if let extracted = extractedImage {
-                    // 显示抠出的主体 + 边缘光效
-                    ZStack {
-                        // 主体图片
-                        Image(uiImage: extracted)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxHeight: 400)
-                        
-                        // 边缘流动光效
-                        EdgeGlowEffect(image: extracted, phase: edgeLightPhase)
-                            .frame(maxHeight: 400)
-                    }
-                    .onAppear {
-                        startEdgeAnimation()
-                    }
+                    // 显示抠出的主体
+                    Image(uiImage: extracted)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: 400)
+                        .shadow(color: .black.opacity(0.15), radius: 20, y: 10)
                 } else {
                     // 提取失败，显示原图
                     Image(uiImage: image)
@@ -120,7 +103,7 @@ struct PhotoPreviewView: View {
             if !isExtracting && extractedImage != nil {
                 Text("已识别物品，确认后继续")
                     .font(.system(size: 14, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.8))
+                    .foregroundStyle(AppTheme.textSecondary)
                     .padding(.bottom, 20)
             }
             
@@ -131,12 +114,12 @@ struct PhotoPreviewView: View {
                     onDismiss()
                 } label: {
                     Circle()
-                        .fill(.gray.opacity(0.6))
+                        .fill(AppTheme.secondaryBackground)
                         .frame(width: 56, height: 56)
                         .overlay(
                             Image(systemName: "xmark")
                                 .font(.system(size: 20, weight: .medium))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(AppTheme.textSecondary)
                         )
                 }
                 
@@ -154,7 +137,7 @@ struct PhotoPreviewView: View {
                                 )
                             )
                             .frame(width: 72, height: 72)
-                            .shadow(color: Color(hex: "4ECDC4").opacity(0.5), radius: 12, y: 6)
+                            .shadow(color: Color(hex: "4ECDC4").opacity(0.4), radius: 12, y: 6)
                         
                         if isRecognizing {
                             ProgressView()
@@ -174,12 +157,12 @@ struct PhotoPreviewView: View {
                     showCropView = true
                 } label: {
                     Circle()
-                        .fill(.gray.opacity(0.6))
+                        .fill(AppTheme.secondaryBackground)
                         .frame(width: 56, height: 56)
                         .overlay(
                             Image(systemName: "crop")
                                 .font(.system(size: 20, weight: .medium))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(AppTheme.textSecondary)
                         )
                 }
             }
@@ -187,13 +170,6 @@ struct PhotoPreviewView: View {
         }
         .padding(.horizontal)
         .padding(.top, 20)
-        .background(
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.5)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
     }
     
     // MARK: - 提取主体
@@ -214,13 +190,6 @@ struct PhotoPreviewView: View {
                     isExtracting = false
                 }
             }
-        }
-    }
-    
-    // MARK: - 边缘光动画
-    private func startEdgeAnimation() {
-        withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
-            edgeLightPhase = 1
         }
     }
     
@@ -267,46 +236,6 @@ struct PhotoPreviewView: View {
         
         showRecognitionResult = false
         showSaveSuccess = true
-    }
-}
-
-// MARK: - 边缘流动光效
-struct EdgeGlowEffect: View {
-    let image: UIImage
-    let phase: CGFloat
-    
-    var body: some View {
-        GeometryReader { geometry in
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .hidden()
-                .overlay(
-                    // 白色边缘光
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .colorMultiply(.white)
-                        .blur(radius: 3)
-                        .opacity(0.8)
-                        .mask(
-                            // 流动光效遮罩
-                            AngularGradient(
-                                gradient: Gradient(colors: [
-                                    .white.opacity(0),
-                                    .white.opacity(0),
-                                    .white,
-                                    .white,
-                                    .white.opacity(0),
-                                    .white.opacity(0)
-                                ]),
-                                center: .center,
-                                startAngle: .degrees(Double(360 * phase)),
-                                endAngle: .degrees(Double(360 * phase) + 90)
-                            )
-                        )
-                )
-        }
     }
 }
 
