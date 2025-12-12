@@ -10,26 +10,41 @@ struct WordCardListView: View {
     
     var body: some View {
         NavigationStack {
-            Group {
+            ZStack {
+                // 可爱粉色背景
+                AppTheme.background
+                    .ignoresSafeArea()
+                
                 if wordCards.isEmpty {
                     emptyStateView
                 } else {
                     cardListView
                 }
             }
-            .navigationTitle("我的单词")
+            .navigationTitle("🌸 我的单词本")
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 if !wordCards.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             showFlashcardReview = true
                         } label: {
-                            Image(systemName: "rectangle.stack")
+                            HStack(spacing: 4) {
+                                Image(systemName: "sparkles")
+                                Text("复习")
+                            }
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(AppTheme.primaryGradient)
+                            .clipShape(Capsule())
                         }
                     }
                 }
             }
         }
+        .tint(AppTheme.pink)
         .sheet(item: $selectedCard) { card in
             WordCardDetailView(wordCard: card)
         }
@@ -77,42 +92,85 @@ struct WordCardListView: View {
     }
 }
 
-// MARK: - 单词卡片 Cell
+// MARK: - 可爱单词卡片 Cell
 struct WordCardCell: View {
     let wordCard: WordCard
+    @State private var isPressed = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // 图片
-            if let uiImage = UIImage(data: wordCard.imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 120)
-                    .clipped()
-            } else {
-                Rectangle()
-                    .fill(.gray.opacity(0.2))
-                    .frame(height: 120)
+        VStack(alignment: .leading, spacing: 0) {
+            // 图片区域
+            ZStack(alignment: .topTrailing) {
+                if let uiImage = UIImage(data: wordCard.imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(height: 130)
+                        .clipped()
+                } else {
+                    Rectangle()
+                        .fill(AppTheme.lavender.opacity(0.3))
+                        .frame(height: 130)
+                        .overlay(
+                            Text("🖼️")
+                                .font(.system(size: 40))
+                        )
+                }
+                
+                // 可爱装饰角标
+                Text("✨")
+                    .font(.system(size: 16))
+                    .padding(6)
+                    .background(Circle().fill(.white.opacity(0.9)))
+                    .offset(x: -8, y: 8)
             }
+            .clipShape(
+                RoundedCorner(radius: AppTheme.cornerRadiusLarge, corners: [.topLeft, .topRight])
+            )
             
-            // 文字信息
-            VStack(alignment: .leading, spacing: 4) {
+            // 文字信息区域
+            VStack(alignment: .leading, spacing: 6) {
                 Text(wordCard.word)
-                    .font(.headline)
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundStyle(AppTheme.textPrimary)
                     .lineLimit(1)
                 
-                Text(wordCard.translation)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                HStack(spacing: 4) {
+                    Text("💭")
+                        .font(.system(size: 12))
+                    Text(wordCard.translation)
+                        .font(.system(size: 13, design: .rounded))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .lineLimit(1)
+                }
             }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppTheme.cardBackground)
         }
-        .background(.background)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.cornerRadiusLarge))
+        .shadow(color: AppTheme.pink.opacity(0.15), radius: 8, y: 4)
+        .scaleEffect(isPressed ? 0.96 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
+        .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
+            isPressed = pressing
+        }, perform: {})
+    }
+}
+
+// 圆角辅助
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: corners,
+            cornerRadii: CGSize(width: radius, height: radius)
+        )
+        return Path(path.cgPath)
     }
 }
 

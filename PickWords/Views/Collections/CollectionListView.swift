@@ -11,20 +11,34 @@ struct CollectionListView: View {
     
     var body: some View {
         NavigationStack {
-            Group {
+            ZStack {
+                // 可爱粉色背景
+                AppTheme.background
+                    .ignoresSafeArea()
+                
                 if collections.isEmpty {
                     emptyStateView
                 } else {
                     collectionListView
                 }
             }
-            .navigationTitle("场景收藏")
+            .navigationTitle("📁 场景收藏")
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showCreateSheet = true
                     } label: {
-                        Image(systemName: "plus")
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                            Text("新建")
+                        }
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(AppTheme.primaryGradient)
+                        .clipShape(Capsule())
                     }
                 }
             }
@@ -37,6 +51,7 @@ struct CollectionListView: View {
                 }
             }
         }
+        .tint(AppTheme.pink)
     }
     
     // MARK: - 空状态
