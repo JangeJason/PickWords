@@ -365,168 +365,190 @@ struct CropOverlay: View {
     }
 }
 
-// MARK: - 识别结果视图
+// MARK: - 识别结果视图（贴纸动画版）
 struct RecognitionResultView: View {
     let result: RecognitionResult
     let originalImage: UIImage
     let extractedImage: UIImage?
-    let onSave: (UUID?) -> Void  // 传递选中的收藏集 ID
+    let onSave: (UUID?) -> Void
     let onRetry: () -> Void
     
-    @Query(sort: \Collection.createdAt, order: .reverse) private var collections: [Collection]
-    @State private var selectedCollectionId: UUID?
-    @State private var showCollectionPicker = false
+    // 动画状态
+    @State private var wordLabelOffset: CGFloat = 100
+    @State private var wordLabelOpacity: Double = 0
+    @State private var stickerOffset: CGFloat = 150
+    @State private var contentOpacity: Double = 0
+    @State private var showContent = false
     
-    // 显示的图片：优先显示抠图后的主体
     private var displayImage: UIImage {
         extractedImage ?? originalImage
     }
     
-    private var selectedCollection: Collection? {
-        collections.first { $0.id == selectedCollectionId }
+    var body: some View {
+        ZStack {
+            // 背景：白色点阵
+            DotPatternBackground()
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                Spacer()
+                    .frame(height: 60)
+                
+                // 物品单词贴纸组合
+                VStack(spacing: -15) {
+                    // 物品贴纸（带白边）
+                    objectSticker
+                    
+                    // 单词标签贴纸（带白边）
+                    wordLabelSticker
+                        .offset(y: wordLabelOffset)
+                        .opacity(wordLabelOpacity)
+                }
+                .offset(y: stickerOffset)
+                
+                // 音标
+                Text(result.phonetic)
+                    .font(.system(size: 18, design: .rounded))
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .padding(.top, 30)
+                    .opacity(contentOpacity)
+                
+                // 例句区域
+                exampleSection
+                    .opacity(contentOpacity)
+                
+                Spacer()
+                
+                // 底部按钮
+                bottomButtons
+                    .opacity(contentOpacity)
+            }
+            .padding(.horizontal, 24)
+        }
+        .onAppear {
+            startAnimations()
+        }
     }
     
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // 图片（抠图后的主体或原图）
-                    ZStack {
-                        // 棋盘格背景（显示透明区域）
-                        if extractedImage != nil {
-                            CheckerboardBackground()
-                        }
-                        
-                        Image(uiImage: displayImage)
-                            .resizable()
-                            .scaledToFit()
-                    }
-                    .frame(maxHeight: 250)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+    // MARK: - 物品贴纸
+    private var objectSticker: some View {
+        Image(uiImage: displayImage)
+            .resizable()
+            .scaledToFit()
+            .frame(maxHeight: 200)
+            .padding(6)
+            .background(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
+    }
+    
+    // MARK: - 单词标签贴纸
+    private var wordLabelSticker: some View {
+        Text(result.word)
+            .font(.system(size: 28, weight: .bold, design: .rounded))
+            .foregroundStyle(Color(hex: "4A5568"))
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .background(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(.white, lineWidth: 4)
+            )
+            .shadow(color: .black.opacity(0.1), radius: 6, y: 3)
+    }
+    
+    // MARK: - 例句区域
+    private var exampleSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // 中文释义
+            HStack {
+                Text("📖")
+                Text(result.translation)
+                    .font(.system(size: 18, weight: .medium, design: .rounded))
+                    .foregroundStyle(AppTheme.textPrimary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            Divider()
+                .background(AppTheme.lavender)
+            
+            // 英文例句
+            Text(result.exampleSentence)
+                .font(.system(size: 16, design: .rounded))
+                .foregroundStyle(AppTheme.textPrimary)
+                .italic()
+            
+            // 中文翻译
+            Text(result.exampleTranslation)
+                .font(.system(size: 14, design: .rounded))
+                .foregroundStyle(AppTheme.textSecondary)
+        }
+        .padding(20)
+        .background(AppTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
+        .padding(.top, 30)
+    }
+    
+    // MARK: - 底部按钮
+    private var bottomButtons: some View {
+        HStack(spacing: 60) {
+            // 返回按钮
+            Button {
+                onRetry()
+            } label: {
+                Circle()
+                    .fill(AppTheme.secondaryBackground)
+                    .frame(width: 60, height: 60)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(.gray.opacity(0.2), lineWidth: 1)
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundStyle(AppTheme.textSecondary)
                     )
-                    
-                    // 抠图提示
-                    if extractedImage != nil {
-                        HStack {
-                            Image(systemName: "sparkles")
-                                .foregroundStyle(.green)
-                            Text("已智能提取主体")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    
-                    // 单词卡片
-                    VStack(spacing: 16) {
-                        // 单词和音标
-                        VStack(spacing: 8) {
-                            Text(result.word)
-                                .font(.system(size: 36, weight: .bold))
-                            
-                            Text(result.phonetic)
-                                .font(.title3)
-                                .foregroundStyle(.secondary)
-                        }
-                        
-                        Divider()
-                        
-                        // 中文释义
-                        HStack {
-                            Text("释义")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                        }
-                        Text(result.translation)
-                            .font(.title2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        Divider()
-                        
-                        // 例句
-                        HStack {
-                            Text("例句")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                        }
-                        Text(result.exampleSentence)
-                            .font(.body)
-                            .italic()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        Text(result.exampleTranslation)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .padding()
-                    .background(.regularMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    
-                    // 收藏集选择
-                    Button {
-                        showCollectionPicker = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "folder")
-                                .foregroundStyle(.blue)
-                            
-                            if let collection = selectedCollection {
-                                Text("\(collection.icon) \(collection.name)")
-                                    .foregroundStyle(.primary)
-                            } else {
-                                Text("选择收藏集（可选）")
-                                    .foregroundStyle(.secondary)
-                            }
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding()
-                        .background(.regularMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    
-                    // 按钮
-                    HStack(spacing: 16) {
-                        Button {
-                            onRetry()
-                        } label: {
-                            Label("重拍", systemImage: "arrow.counterclockwise")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(.gray.opacity(0.15))
-                                .foregroundStyle(.primary)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        
-                        Button {
-                            onSave(selectedCollectionId)
-                        } label: {
-                            Label("保存", systemImage: "square.and.arrow.down")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(.blue)
-                                .foregroundStyle(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                    }
-                }
-                .padding()
             }
-            .navigationTitle("识别结果")
-            .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showCollectionPicker) {
-                CollectionPickerView(selectedId: $selectedCollectionId)
+            
+            // 保存按钮
+            Button {
+                onSave(nil)
+            } label: {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [AppTheme.pink, Color(hex: "FF8FAB")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 72, height: 72)
+                    .overlay(
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.system(size: 26, weight: .bold))
+                            .foregroundStyle(.white)
+                    )
+                    .shadow(color: AppTheme.pink.opacity(0.4), radius: 12, y: 6)
             }
+        }
+        .padding(.bottom, 50)
+    }
+    
+    // MARK: - 动画序列
+    private func startAnimations() {
+        // 第一步：单词标签贴上来
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2)) {
+            wordLabelOffset = 0
+            wordLabelOpacity = 1
+        }
+        
+        // 第二步：整个贴纸向上移动
+        withAnimation(.spring(response: 0.8, dampingFraction: 0.8).delay(0.7)) {
+            stickerOffset = 0
+        }
+        
+        // 第三步：显示其他内容
+        withAnimation(.easeOut(duration: 0.5).delay(1.2)) {
+            contentOpacity = 1
+            showContent = true
         }
     }
 }
