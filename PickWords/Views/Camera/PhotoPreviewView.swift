@@ -14,7 +14,6 @@ struct PhotoPreviewView: View {
     @State private var recognitionResult: RecognitionResult?
     @State private var isRecognizing = false
     @State private var errorMessage: String?
-    @State private var showSaveSuccess = false
     
     var body: some View {
         ZStack {
@@ -86,13 +85,6 @@ struct PhotoPreviewView: View {
                     }
                 )
             }
-        }
-        .alert("保存成功", isPresented: $showSaveSuccess) {
-            Button("继续拍照") {
-                onDismiss()
-            }
-        } message: {
-            Text("单词卡片已保存到词库")
         }
     }
     
@@ -234,8 +226,9 @@ struct PhotoPreviewView: View {
         
         modelContext.insert(wordCard)
         
+        // 直接返回主页
         showRecognitionResult = false
-        showSaveSuccess = true
+        onDismiss()
     }
 }
 
@@ -430,25 +423,16 @@ struct RecognitionResultView: View {
         }
     }
     
-    // MARK: - 物品贴纸（异型，无底片）
+    // MARK: - 物品贴纸（白色底片）
     private var objectSticker: some View {
-        ZStack {
-            // 白边效果：稍大一点的白色轮廓
-            Image(uiImage: displayImage)
-                .resizable()
-                .scaledToFit()
-                .frame(maxHeight: 200)
-                .colorMultiply(.white)
-                .blur(radius: 2)
-                .scaleEffect(1.03)
-            
-            // 主体图片
-            Image(uiImage: displayImage)
-                .resizable()
-                .scaledToFit()
-                .frame(maxHeight: 200)
-        }
-        .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
+        Image(uiImage: displayImage)
+            .resizable()
+            .scaledToFit()
+            .frame(maxHeight: 200)
+            .padding(12)
+            .background(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
     }
     
     // MARK: - 单词标签贴纸
