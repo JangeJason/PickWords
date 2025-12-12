@@ -174,7 +174,7 @@ struct RoundedCorner: Shape {
     }
 }
 
-// MARK: - 单词卡片详情
+// MARK: - 可爱单词卡片详情
 struct WordCardDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let wordCard: WordCard
@@ -183,98 +183,121 @@ struct WordCardDetailView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // 图片
-                    if let uiImage = UIImage(data: wordCard.imageData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxHeight: 250)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    
-                    // 单词卡片内容
-                    VStack(spacing: 16) {
-                        // 单词和音标
-                        VStack(spacing: 8) {
-                            Text(wordCard.word)
-                                .font(.system(size: 36, weight: .bold))
+            ZStack {
+                AppTheme.background.ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // 图片卡片
+                        ZStack {
+                            if let uiImage = UIImage(data: wordCard.imageData) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(maxHeight: 220)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(AppTheme.cardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: AppTheme.cornerRadiusXLarge))
+                        .shadow(color: AppTheme.pink.opacity(0.15), radius: 12, y: 6)
+                        
+                        // 单词卡片内容
+                        VStack(spacing: 20) {
+                            // 单词和音标
+                            VStack(spacing: 8) {
+                                Text(wordCard.word)
+                                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                                    .foregroundStyle(AppTheme.pink)
+                                
+                                Text(wordCard.phonetic)
+                                    .font(.system(size: 17, design: .rounded))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                            }
                             
-                            Text(wordCard.phonetic)
-                                .font(.title3)
-                                .foregroundStyle(.secondary)
+                            Divider()
+                                .background(AppTheme.lavender.opacity(0.5))
+                            
+                            // 中文释义
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("💭")
+                                    Text("释义")
+                                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                                        .foregroundStyle(AppTheme.textSecondary)
+                                }
+                                Text(wordCard.translation)
+                                    .font(.system(size: 22, weight: .medium, design: .rounded))
+                                    .foregroundStyle(AppTheme.textPrimary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            
+                            Divider()
+                                .background(AppTheme.lavender.opacity(0.5))
+                            
+                            // 例句
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("📝")
+                                    Text("例句")
+                                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                                        .foregroundStyle(AppTheme.textSecondary)
+                                }
+                                Text(wordCard.exampleSentence)
+                                    .font(.system(size: 16, design: .rounded))
+                                    .italic()
+                                    .foregroundStyle(AppTheme.textPrimary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Text(wordCard.exampleTranslation)
+                                    .font(.system(size: 14, design: .rounded))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            
+                            Divider()
+                                .background(AppTheme.lavender.opacity(0.5))
+                            
+                            // 创建时间
+                            HStack {
+                                Text("📅")
+                                Text("添加时间")
+                                    .font(.system(size: 13, design: .rounded))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                                Spacer()
+                                Text(wordCard.createdAt, style: .date)
+                                    .font(.system(size: 13, design: .rounded))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                            }
                         }
-                        
-                        Divider()
-                        
-                        // 中文释义
-                        HStack {
-                            Text("释义")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Spacer()
+                        .padding(20)
+                        .background(AppTheme.cardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: AppTheme.cornerRadiusLarge))
+                    
+                        // 生成贴纸按钮
+                        Button {
+                            showStickerPreview = true
+                        } label: {
+                            HStack {
+                                Text("🎨")
+                                Text("生成单词贴纸")
+                            }
                         }
-                        Text(wordCard.translation)
-                            .font(.title2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        Divider()
-                        
-                        // 例句
-                        HStack {
-                            Text("例句")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                        }
-                        Text(wordCard.exampleSentence)
-                            .font(.body)
-                            .italic()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        Text(wordCard.exampleTranslation)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        Divider()
-                        
-                        // 创建时间
-                        HStack {
-                            Text("添加时间")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Text(wordCard.createdAt, style: .date)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
+                        .buttonStyle(CuteButtonStyle())
                     }
                     .padding()
-                    .background(.regularMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    
-                    // 生成贴纸按钮
-                    Button {
-                        showStickerPreview = true
-                    } label: {
-                        Label("生成单词贴纸", systemImage: "photo.badge.plus")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(.blue)
-                            .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
                 }
-                .padding()
             }
-            .navigationTitle("单词详情")
+            .navigationTitle("✨ 单词详情")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("完成") {
+                    Button {
                         dismiss()
+                    } label: {
+                        Text("完成")
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .foregroundStyle(AppTheme.pink)
                     }
                 }
             }
@@ -289,6 +312,7 @@ struct WordCardDetailView: View {
                 }
             }
         }
+        .tint(AppTheme.pink)
     }
 }
 
