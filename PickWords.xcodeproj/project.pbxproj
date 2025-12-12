@@ -23,6 +23,7 @@
 		A1000001233D00010000000E /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D00000000000E /* Secrets.swift */; };
 		A1000001233D00010000000F /* WordCardListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D00000000000F /* WordCardListView.swift */; };
 		A1000001233D000100000010 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D000000000010 /* CollectionListView.swift */; };
+		A1000001233D000100000011 /* FlashcardReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001233D000000000011 /* FlashcardReviewView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +44,7 @@
 		A1000001233D00000000000E /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
 		A1000001233D00000000000F /* WordCardListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCardListView.swift; sourceTree = "<group>"; };
 		A1000001233D000000000010 /* CollectionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionListView.swift; sourceTree = "<group>"; };
+		A1000001233D000000000011 /* FlashcardReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlashcardReviewView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,9 +104,18 @@
 				A1000001233DGRP000000010 /* Camera */,
 				A1000001233DGRP000000013 /* Cards */,
 				A1000001233DGRP000000014 /* Collections */,
+				A1000001233DGRP000000015 /* Review */,
 				A1000001233DGRP000000011 /* Settings */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		A1000001233DGRP000000015 /* Review */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001233D000000000011 /* FlashcardReviewView.swift */,
+			);
+			path = Review;
 			sourceTree = "<group>";
 		};
 		A1000001233DGRP000000014 /* Collections */ = {
@@ -276,6 +287,7 @@
 				A1000001233D00010000000E /* Secrets.swift in Sources */,
 				A1000001233D00010000000F /* WordCardListView.swift in Sources */,
 				A1000001233D000100000010 /* CollectionListView.swift in Sources */,
+				A1000001233D000100000011 /* FlashcardReviewView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

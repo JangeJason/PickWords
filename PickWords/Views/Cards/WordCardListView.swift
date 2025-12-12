@@ -6,6 +6,7 @@ struct WordCardListView: View {
     @Query(sort: \WordCard.createdAt, order: .reverse) private var wordCards: [WordCard]
     
     @State private var selectedCard: WordCard?
+    @State private var showFlashcardReview = false
     
     var body: some View {
         NavigationStack {
@@ -17,9 +18,23 @@ struct WordCardListView: View {
                 }
             }
             .navigationTitle("我的单词")
+            .toolbar {
+                if !wordCards.isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showFlashcardReview = true
+                        } label: {
+                            Image(systemName: "rectangle.stack")
+                        }
+                    }
+                }
+            }
         }
         .sheet(item: $selectedCard) { card in
             WordCardDetailView(wordCard: card)
+        }
+        .fullScreenCover(isPresented: $showFlashcardReview) {
+            FlashcardReviewView(wordCards: wordCards)
         }
     }
     
