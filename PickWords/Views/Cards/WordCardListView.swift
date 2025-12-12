@@ -129,6 +129,8 @@ struct WordCardDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let wordCard: WordCard
     
+    @State private var showStickerPreview = false
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -201,6 +203,19 @@ struct WordCardDetailView: View {
                     .padding()
                     .background(.regularMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
+                    
+                    // 生成贴纸按钮
+                    Button {
+                        showStickerPreview = true
+                    } label: {
+                        Label("生成单词贴纸", systemImage: "photo.badge.plus")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(.blue)
+                            .foregroundStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
                 }
                 .padding()
             }
@@ -211,6 +226,16 @@ struct WordCardDetailView: View {
                     Button("完成") {
                         dismiss()
                     }
+                }
+            }
+            .sheet(isPresented: $showStickerPreview) {
+                if let uiImage = UIImage(data: wordCard.imageData) {
+                    StickerPreviewView(
+                        originalImage: uiImage,
+                        word: wordCard.word,
+                        phonetic: wordCard.phonetic,
+                        translation: wordCard.translation
+                    )
                 }
             }
         }
