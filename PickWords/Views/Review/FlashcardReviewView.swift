@@ -58,19 +58,11 @@ struct FlashcardReviewView: View {
     
     // MARK: - 空状态
     private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "rectangle.stack.badge.plus")
-                .font(.system(size: 60))
-                .foregroundStyle(.secondary)
-            
-            Text("没有单词可复习")
-                .font(.title2)
-                .fontWeight(.semibold)
-            
-            Text("拍摄物品添加单词后再来复习")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
+        EmptyStateView(
+            icon: "rectangle.stack.badge.plus",
+            title: "没有单词可复习",
+            message: "拍摄物品添加单词后再来复习"
+        )
     }
     
     // MARK: - 进度

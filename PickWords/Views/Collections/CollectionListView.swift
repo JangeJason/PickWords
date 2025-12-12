@@ -41,30 +41,13 @@ struct CollectionListView: View {
     
     // MARK: - 空状态
     private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "folder.badge.plus")
-                .font(.system(size: 60))
-                .foregroundStyle(.secondary)
-            
-            Text("还没有收藏集")
-                .font(.title2)
-                .fontWeight(.semibold)
-            
-            Text("创建收藏集，按场景分类你的单词")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            
-            Button {
-                showCreateSheet = true
-            } label: {
-                Label("创建收藏集", systemImage: "plus")
-                    .font(.headline)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(.blue)
-                    .foregroundStyle(.white)
-                    .clipShape(Capsule())
-            }
+        EmptyStateView(
+            icon: "folder.badge.plus",
+            title: "还没有收藏集",
+            message: "创建收藏集，按场景分类你的单词",
+            actionTitle: "创建收藏集"
+        ) {
+            showCreateSheet = true
         }
     }
     
