@@ -11,20 +11,34 @@ struct CollectionListView: View {
     
     var body: some View {
         NavigationStack {
-            Group {
+            ZStack {
+                // 可爱粉色背景
+                AppTheme.background
+                    .ignoresSafeArea()
+                
                 if collections.isEmpty {
                     emptyStateView
                 } else {
                     collectionListView
                 }
             }
-            .navigationTitle("场景收藏")
+            .navigationTitle("📁 场景收藏")
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showCreateSheet = true
                     } label: {
-                        Image(systemName: "plus")
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                            Text("新建")
+                        }
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(AppTheme.primaryGradient)
+                        .clipShape(Capsule())
                     }
                 }
             }
@@ -37,34 +51,18 @@ struct CollectionListView: View {
                 }
             }
         }
+        .tint(AppTheme.pink)
     }
     
     // MARK: - 空状态
     private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "folder.badge.plus")
-                .font(.system(size: 60))
-                .foregroundStyle(.secondary)
-            
-            Text("还没有收藏集")
-                .font(.title2)
-                .fontWeight(.semibold)
-            
-            Text("创建收藏集，按场景分类你的单词")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            
-            Button {
-                showCreateSheet = true
-            } label: {
-                Label("创建收藏集", systemImage: "plus")
-                    .font(.headline)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(.blue)
-                    .foregroundStyle(.white)
-                    .clipShape(Capsule())
-            }
+        EmptyStateView(
+            icon: "folder.badge.plus",
+            title: "还没有收藏集",
+            message: "创建收藏集，按场景分类你的单词",
+            actionTitle: "创建收藏集"
+        ) {
+            showCreateSheet = true
         }
     }
     
@@ -102,7 +100,7 @@ struct CollectionListView: View {
     }
 }
 
-// MARK: - 收藏集行
+// MARK: - 可爱收藏集行
 struct CollectionRow: View {
     let collection: Collection
     
@@ -117,26 +115,42 @@ struct CollectionRow: View {
     }
     
     var body: some View {
-        HStack(spacing: 12) {
-            Text(collection.icon)
-                .font(.title)
+        HStack(spacing: 14) {
+            // 可爱图标背景
+            ZStack {
+                Circle()
+                    .fill(AppTheme.lavender.opacity(0.2))
+                    .frame(width: 50, height: 50)
+                
+                Text(collection.icon)
+                    .font(.system(size: 26))
+            }
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(collection.name)
-                    .font(.headline)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(AppTheme.textPrimary)
                 
-                Text("\(wordCards.count) 个单词")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Text("📝")
+                        .font(.system(size: 11))
+                    Text("\(wordCards.count) 个单词")
+                        .font(.system(size: 13, design: .rounded))
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
             }
             
             Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(AppTheme.lavender)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
     }
 }
 
-// MARK: - 创建收藏集
+// MARK: - 可爱创建收藏集
 struct CreateCollectionView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -144,61 +158,113 @@ struct CreateCollectionView: View {
     @State private var name = ""
     @State private var selectedEmoji = "📁"
     
-    private let emojis = ["📁", "🍳", "🛒", "✈️", "🏠", "🏢", "🎮", "📚", "🎵", "🏃", "🍔", "☕️", "🌳", "🚗", "👕", "💻"]
+    private let emojis = ["📁", "🍳", "🛒", "✈️", "🏠", "🏢", "🎮", "📚", "🎵", "🏃", "🍔", "☕️", "🌳", "🚗", "👕", "💻", "🎀", "🌸", "⭐️", "💖", "🦋", "🌈", "🍰", "🧸"]
     
     var body: some View {
         NavigationStack {
-            Form {
-                Section("图标") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 8), spacing: 12) {
-                        ForEach(emojis, id: \.self) { emoji in
-                            Text(emoji)
-                                .font(.title)
-                                .padding(8)
-                                .background(selectedEmoji == emoji ? .blue.opacity(0.2) : .clear)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                .onTapGesture {
-                                    selectedEmoji = emoji
-                                }
+            ZStack {
+                AppTheme.background.ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // 预览卡片
+                        VStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(AppTheme.lavender.opacity(0.2))
+                                    .frame(width: 80, height: 80)
+                                
+                                Text(selectedEmoji)
+                                    .font(.system(size: 40))
+                            }
+                            
+                            Text(name.isEmpty ? "收藏集名称" : name)
+                                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                .foregroundStyle(name.isEmpty ? AppTheme.textSecondary : AppTheme.textPrimary)
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 24)
+                        .background(AppTheme.cardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: AppTheme.cornerRadiusLarge))
+                        .shadow(color: AppTheme.pink.opacity(0.1), radius: 10, y: 4)
+                        
+                        // 选择图标
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("✨ 选择图标")
+                                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                .foregroundStyle(AppTheme.textSecondary)
+                            
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 12) {
+                                ForEach(emojis, id: \.self) { emoji in
+                                    Text(emoji)
+                                        .font(.system(size: 28))
+                                        .frame(width: 48, height: 48)
+                                        .background(selectedEmoji == emoji ? AppTheme.pink.opacity(0.2) : AppTheme.cardBackground)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(selectedEmoji == emoji ? AppTheme.pink : Color.clear, lineWidth: 2)
+                                        )
+                                        .onTapGesture {
+                                            withAnimation(.spring(response: 0.3)) {
+                                                selectedEmoji = emoji
+                                            }
+                                        }
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(AppTheme.cardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: AppTheme.cornerRadiusLarge))
+                        
+                        // 输入名称
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("📝 收藏集名称")
+                                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                .foregroundStyle(AppTheme.textSecondary)
+                            
+                            TextField("输入名称...", text: $name)
+                                .font(.system(size: 16, design: .rounded))
+                                .padding()
+                                .background(AppTheme.secondaryBackground)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .padding()
+                        .background(AppTheme.cardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: AppTheme.cornerRadiusLarge))
+                        
+                        // 创建按钮
+                        Button {
+                            createCollection()
+                        } label: {
+                            HStack {
+                                Text("✨")
+                                Text("创建收藏集")
+                                Text("✨")
+                            }
+                        }
+                        .buttonStyle(CuteButtonStyle())
+                        .disabled(name.isEmpty)
+                        .opacity(name.isEmpty ? 0.5 : 1)
                     }
-                    .padding(.vertical, 8)
-                }
-                
-                Section("名称") {
-                    TextField("收藏集名称", text: $name)
-                }
-                
-                Section {
-                    HStack {
-                        Text(selectedEmoji)
-                            .font(.largeTitle)
-                        Text(name.isEmpty ? "收藏集名称" : name)
-                            .font(.headline)
-                            .foregroundStyle(name.isEmpty ? .secondary : .primary)
-                    }
-                    .frame(maxWidth: .infinity)
                     .padding()
-                } header: {
-                    Text("预览")
                 }
             }
-            .navigationTitle("新建收藏集")
+            .navigationTitle("🌸 新建收藏集")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("取消") {
+                    Button {
                         dismiss()
+                    } label: {
+                        Text("取消")
+                            .font(.system(size: 15, design: .rounded))
+                            .foregroundStyle(AppTheme.textSecondary)
                     }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("创建") {
-                        createCollection()
-                    }
-                    .disabled(name.isEmpty)
                 }
             }
         }
+        .tint(AppTheme.pink)
     }
     
     private func createCollection() {

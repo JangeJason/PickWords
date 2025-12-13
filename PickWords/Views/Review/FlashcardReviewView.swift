@@ -12,8 +12,8 @@ struct FlashcardReviewView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // 背景
-                Color(.systemGroupedBackground)
+                // 可爱粉色背景
+                AppTheme.background
                     .ignoresSafeArea()
                 
                 if wordCards.isEmpty {
@@ -44,44 +44,46 @@ struct FlashcardReviewView: View {
                     .padding()
                 }
             }
-            .navigationTitle("闪卡复习")
+            .navigationTitle("✨ 闪卡复习")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("完成") {
+                    Button {
                         dismiss()
+                    } label: {
+                        Text("完成")
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .foregroundStyle(AppTheme.pink)
                     }
                 }
             }
         }
+        .tint(AppTheme.pink)
     }
     
     // MARK: - 空状态
     private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "rectangle.stack.badge.plus")
-                .font(.system(size: 60))
-                .foregroundStyle(.secondary)
-            
-            Text("没有单词可复习")
-                .font(.title2)
-                .fontWeight(.semibold)
-            
-            Text("拍摄物品添加单词后再来复习")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
+        EmptyStateView(
+            icon: "rectangle.stack.badge.plus",
+            title: "没有单词可复习",
+            message: "拍摄物品添加单词后再来复习"
+        )
     }
     
     // MARK: - 进度
     private var progressView: some View {
         VStack(spacing: 8) {
-            Text("\(currentIndex + 1) / \(wordCards.count)")
-                .font(.headline)
-                .foregroundStyle(.secondary)
+            HStack {
+                Text("✨")
+                Text("\(currentIndex + 1) / \(wordCards.count)")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundStyle(AppTheme.textPrimary)
+                Text("✨")
+            }
             
             ProgressView(value: Double(currentIndex + 1), total: Double(wordCards.count))
-                .tint(.blue)
+                .tint(AppTheme.pink)
+                .scaleEffect(y: 1.5)
         }
     }
     
@@ -127,20 +129,25 @@ struct FlashcardReviewView: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFit()
-                    .frame(maxHeight: 300)
+                    .frame(maxHeight: 280)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
             }
             
             Spacer()
             
-            Text("点击翻转查看答案")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .padding(.bottom)
+            HStack {
+                Text("👆")
+                Text("点击翻转查看答案")
+                    .font(.system(size: 14, design: .rounded))
+                    .foregroundStyle(AppTheme.textSecondary)
+            }
+            .padding(.bottom)
         }
+        .padding()
         .frame(maxWidth: .infinity, maxHeight: 400)
-        .background(.background)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+        .background(AppTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.cornerRadiusXLarge))
+        .shadow(color: AppTheme.pink.opacity(0.2), radius: 15, y: 8)
     }
     
     // MARK: - 卡片背面（单词信息）
@@ -148,97 +155,107 @@ struct FlashcardReviewView: View {
         VStack(spacing: 16) {
             // 单词
             Text(card.word)
-                .font(.system(size: 32, weight: .bold))
+                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .foregroundStyle(AppTheme.pink)
             
             // 音标
             Text(card.phonetic)
-                .font(.title3)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 18, design: .rounded))
+                .foregroundStyle(AppTheme.textSecondary)
             
             Divider()
+                .background(AppTheme.lavender)
                 .padding(.horizontal, 40)
             
             // 释义
-            Text(card.translation)
-                .font(.title2)
+            HStack {
+                Text("💭")
+                Text(card.translation)
+                    .font(.system(size: 22, weight: .medium, design: .rounded))
+                    .foregroundStyle(AppTheme.textPrimary)
+            }
             
             Divider()
+                .background(AppTheme.lavender)
                 .padding(.horizontal, 40)
             
             // 例句
             VStack(spacing: 8) {
                 Text(card.exampleSentence)
-                    .font(.body)
+                    .font(.system(size: 15, design: .rounded))
                     .italic()
                     .multilineTextAlignment(.center)
+                    .foregroundStyle(AppTheme.textPrimary)
                 
                 Text(card.exampleTranslation)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 13, design: .rounded))
+                    .foregroundStyle(AppTheme.textSecondary)
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: 400)
-        .background(.background)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+        .background(AppTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.cornerRadiusXLarge))
+        .shadow(color: AppTheme.lavender.opacity(0.3), radius: 15, y: 8)
     }
     
     // MARK: - 操作提示
     private var instructionView: some View {
         HStack(spacing: 40) {
-            VStack {
-                Image(systemName: "arrow.left")
-                    .font(.title2)
+            VStack(spacing: 4) {
+                Text("⬅️")
+                    .font(.system(size: 24))
                 Text("上一张")
-                    .font(.caption)
+                    .font(.system(size: 12, design: .rounded))
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(AppTheme.textSecondary)
             
-            VStack {
-                Image(systemName: "hand.tap")
-                    .font(.title2)
+            VStack(spacing: 4) {
+                Text("👆")
+                    .font(.system(size: 24))
                 Text("翻转")
-                    .font(.caption)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
             }
-            .foregroundStyle(.blue)
+            .foregroundStyle(AppTheme.pink)
             
-            VStack {
-                Image(systemName: "arrow.right")
-                    .font(.title2)
+            VStack(spacing: 4) {
+                Text("➡️")
+                    .font(.system(size: 24))
                 Text("下一张")
-                    .font(.caption)
+                    .font(.system(size: 12, design: .rounded))
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(AppTheme.textSecondary)
         }
     }
     
     // MARK: - 导航按钮
     private var navigationButtons: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 24) {
             Button {
                 goToPrevious()
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.title2)
-                    .frame(width: 60, height: 60)
-                    .background(.gray.opacity(0.15))
+                    .font(.system(size: 20, weight: .bold))
+                    .frame(width: 56, height: 56)
+                    .background(AppTheme.lavender.opacity(0.3))
+                    .foregroundStyle(AppTheme.lavender)
                     .clipShape(Circle())
             }
             .disabled(currentIndex == 0)
-            .opacity(currentIndex == 0 ? 0.5 : 1)
+            .opacity(currentIndex == 0 ? 0.4 : 1)
             
             Button {
                 goToNext()
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.title2)
-                    .frame(width: 60, height: 60)
-                    .background(.blue)
+                    .font(.system(size: 20, weight: .bold))
+                    .frame(width: 56, height: 56)
+                    .background(AppTheme.pink)
                     .foregroundStyle(.white)
                     .clipShape(Circle())
+                    .shadow(color: AppTheme.pink.opacity(0.4), radius: 8, y: 4)
             }
             .disabled(currentIndex == wordCards.count - 1)
             .opacity(currentIndex == wordCards.count - 1 ? 0.5 : 1)
