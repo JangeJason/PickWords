@@ -8,6 +8,7 @@ struct HomeView: View {
     @State private var showCamera = false
     @State private var selectedCard: WordCard?
     @State private var selectedDate = Date()
+    @State private var showSettings = false
     
     // 选中日期的单词
     private var selectedDateWordCards: [WordCard] {
@@ -49,6 +50,9 @@ struct HomeView: View {
         }
         .sheet(item: $selectedCard) { card in
             WordCardDetailView(wordCard: card)
+        }
+        .sheet(isPresented: $showSettings) {
+            APIKeySettingView()
         }
         .onAppear {
             startPulseAnimation()
@@ -134,16 +138,20 @@ struct HomeView: View {
         }
     }
     
-    // 用户头像
+    // 用户头像（点击进入设置）
     private var userAvatar: some View {
-        Circle()
-            .fill(AppTheme.lavender.opacity(0.3))
-            .frame(width: 44, height: 44)
-            .overlay(
-                Image(systemName: "person.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(AppTheme.lavender)
-            )
+        Button {
+            showSettings = true
+        } label: {
+            Circle()
+                .fill(AppTheme.lavender.opacity(0.3))
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(AppTheme.lavender)
+                )
+        }
     }
     
     // MARK: - 内容区域
