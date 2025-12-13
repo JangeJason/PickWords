@@ -7,14 +7,19 @@ struct HomeView: View {
     
     @State private var showCamera = false
     @State private var selectedCard: WordCard?
+    @State private var selectedDate = Date()
     
-    // 今日的单词
-    private var todayWordCards: [WordCard] {
+    // 选中日期的单词
+    private var selectedDateWordCards: [WordCard] {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
         return allWordCards.filter { card in
-            calendar.isDate(card.createdAt, inSameDayAs: today)
+            calendar.isDate(card.createdAt, inSameDayAs: selectedDate)
         }
+    }
+    
+    // 是否是今天（不能切换到未来）
+    private var isToday: Bool {
+        Calendar.current.isDateInToday(selectedDate)
     }
     
     @State private var cameraButtonScale: CGFloat = 1.0
@@ -61,13 +66,43 @@ struct HomeView: View {
             
             Spacer()
             
-            // 中间 - 日期和今日单词数（真正居中）
+            // 中间 - 日期和今日单词数（带左右箭头）
             VStack(spacing: 6) {
-                Text(formattedDate)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(AppTheme.textPrimary)
+                // 日期切换区域
+                HStack(spacing: 16) {
+                    // 左箭头（前一天）
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+                        }
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .frame(width: 32, height: 32)
+                    }
+                    
+                    // 日期
+                    Text(formattedDate)
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .frame(minWidth: 100)
+                    
+                    // 右箭头（后一天，不能超过今天）
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
+                        }
+                    } label: {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(isToday ? AppTheme.textSecondary.opacity(0.3) : AppTheme.textSecondary)
+                            .frame(width: 32, height: 32)
+                    }
+                    .disabled(isToday)
+                }
                 
-                Text("今日收录 \(todayWordCards.count) 个单词")
+                Text(dateSummaryText)
                     .font(.system(size: 14, design: .rounded))
                     .foregroundStyle(AppTheme.textSecondary)
             }
@@ -87,7 +122,16 @@ struct HomeView: View {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_CN")
         formatter.dateFormat = "M月d日"
-        return formatter.string(from: Date())
+        return formatter.string(from: selectedDate)
+    }
+    
+    // 日期摘要文字
+    private var dateSummaryText: String {
+        if isToday {
+            return "今日收录 \(selectedDateWordCards.count) 个单词"
+        } else {
+            return "收录了 \(selectedDateWordCards.count) 个单词"
+        }
     }
     
     // 用户头像
@@ -105,7 +149,7 @@ struct HomeView: View {
     // MARK: - 内容区域
     private var contentView: some View {
         ScrollView {
-            if todayWordCards.isEmpty {
+            if selectedDateWordCards.isEmpty {
                 emptyStateView
             } else {
                 wordCardsGrid
@@ -122,13 +166,15 @@ struct HomeView: View {
             Text("📷")
                 .font(.system(size: 60))
             
-            Text("今天还没有收录单词")
+            Text(isToday ? "今天还没有收录单词" : "这一天没有收录单词")
                 .font(.system(size: 18, weight: .medium, design: .rounded))
                 .foregroundStyle(AppTheme.textSecondary)
             
-            Text("点击下方相机按钮开始")
-                .font(.system(size: 14, design: .rounded))
-                .foregroundStyle(AppTheme.textSecondary.opacity(0.7))
+            if isToday {
+                Text("点击下方相机按钮开始")
+                    .font(.system(size: 14, design: .rounded))
+                    .foregroundStyle(AppTheme.textSecondary.opacity(0.7))
+            }
         }
     }
     
@@ -141,7 +187,7 @@ struct HomeView: View {
             ],
             spacing: 30
         ) {
-            ForEach(todayWordCards) { card in
+            ForEach(selectedDateWordCards) { card in
                 StickerWordCard(wordCard: card)
                     .onTapGesture {
                         selectedCard = card
