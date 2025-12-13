@@ -10,12 +10,31 @@ final class VisionService {
     private init() {}
     
     /// 主体抠图 - 使用 iOS 17+ 的 Subject Lifting API
+    /// 如果直接提取失败，会先尝试裁剪到显著区域再提取
     @available(iOS 17.0, *)
     func extractSubject(from image: UIImage) async throws -> UIImage {
         // 先将图片转为正确方向的版本
         let normalizedImage = normalizeImageOrientation(image)
         
-        guard let cgImage = normalizedImage.cgImage else {
+        // 首先尝试直接提取
+        if let result = try? await performSubjectExtraction(from: normalizedImage) {
+            return result
+        }
+        
+        // 如果失败，尝试先裁剪到显著区域再提取
+        if let croppedImage = await cropToSalientRegion(normalizedImage),
+           let result = try? await performSubjectExtraction(from: croppedImage) {
+            return result
+        }
+        
+        // 都失败了，返回原图
+        throw VisionError.noSubjectFound
+    }
+    
+    /// 执行主体提取
+    @available(iOS 17.0, *)
+    private func performSubjectExtraction(from image: UIImage) async throws -> UIImage {
+        guard let cgImage = image.cgImage else {
             throw VisionError.imageProcessingFailed
         }
         
@@ -26,7 +45,8 @@ final class VisionService {
                     return
                 }
                 
-                guard let result = request.results?.first as? VNInstanceMaskObservation else {
+                guard let result = request.results?.first as? VNInstanceMaskObservation,
+                      !result.allInstances.isEmpty else {
                     continuation.resume(throwing: VisionError.noSubjectFound)
                     return
                 }
@@ -71,6 +91,66 @@ final class VisionService {
                 try handler.perform([request])
             } catch {
                 continuation.resume(throwing: error)
+            }
+        }
+    }
+    
+    /// 裁剪到显著区域（用于远距离拍摄时先放大目标区域）
+    private func cropToSalientRegion(_ image: UIImage) async -> UIImage? {
+        guard let cgImage = image.cgImage else { return nil }
+        
+        return await withCheckedContinuation { continuation in
+            let request = VNGenerateAttentionBasedSaliencyImageRequest { request, error in
+                guard error == nil,
+                      let result = request.results?.first as? VNSaliencyImageObservation,
+                      let salientObjects = result.salientObjects,
+                      !salientObjects.isEmpty else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                
+                // 找到最大的显著区域
+                var combinedRect = salientObjects[0].boundingBox
+                for obj in salientObjects {
+                    combinedRect = combinedRect.union(obj.boundingBox)
+                }
+                
+                // 扩大区域（留一些边距）
+                let padding: CGFloat = 0.1
+                let expandedRect = CGRect(
+                    x: max(0, combinedRect.origin.x - padding),
+                    y: max(0, combinedRect.origin.y - padding),
+                    width: min(1.0 - max(0, combinedRect.origin.x - padding), combinedRect.width + padding * 2),
+                    height: min(1.0 - max(0, combinedRect.origin.y - padding), combinedRect.height + padding * 2)
+                )
+                
+                // 转换为像素坐标（Vision 坐标系 y 轴是反的）
+                let imageWidth = CGFloat(cgImage.width)
+                let imageHeight = CGFloat(cgImage.height)
+                
+                let cropRect = CGRect(
+                    x: expandedRect.origin.x * imageWidth,
+                    y: (1 - expandedRect.origin.y - expandedRect.height) * imageHeight,
+                    width: expandedRect.width * imageWidth,
+                    height: expandedRect.height * imageHeight
+                )
+                
+                // 裁剪图片
+                guard let croppedCGImage = cgImage.cropping(to: cropRect) else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                
+                let croppedImage = UIImage(cgImage: croppedCGImage, scale: image.scale, orientation: image.imageOrientation)
+                continuation.resume(returning: croppedImage)
+            }
+            
+            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+            
+            do {
+                try handler.perform([request])
+            } catch {
+                continuation.resume(returning: nil)
             }
         }
     }
