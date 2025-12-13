@@ -332,10 +332,23 @@ struct ImageCropView: View {
     }
     
     private func cropImage() {
-        // 计算裁剪区域在原图中的位置
-        let scaleX = image.size.width / imageFrame.width
-        let scaleY = image.size.height / imageFrame.height
+        // 先修正图片方向，确保裁剪坐标正确
+        let normalizedImage = normalizeImageOrientation(image)
         
+        guard let cgImage = normalizedImage.cgImage else {
+            onCrop(image)
+            return
+        }
+        
+        // 使用 CGImage 的实际尺寸
+        let actualWidth = CGFloat(cgImage.width)
+        let actualHeight = CGFloat(cgImage.height)
+        
+        // 计算显示尺寸到实际尺寸的缩放比例
+        let scaleX = actualWidth / imageFrame.width
+        let scaleY = actualHeight / imageFrame.height
+        
+        // 计算裁剪区域在原图中的位置
         let cropX = cropRect.origin.x * scaleX
         let cropY = cropRect.origin.y * scaleY
         let cropW = cropRect.width * scaleX
@@ -343,13 +356,25 @@ struct ImageCropView: View {
         
         let cropArea = CGRect(x: cropX, y: cropY, width: cropW, height: cropH)
         
-        guard let cgImage = image.cgImage?.cropping(to: cropArea) else {
+        guard let croppedCGImage = cgImage.cropping(to: cropArea) else {
             onCrop(image)
             return
         }
         
-        let croppedImage = UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+        let croppedImage = UIImage(cgImage: croppedCGImage)
         onCrop(croppedImage)
+    }
+    
+    /// 修正图片方向
+    private func normalizeImageOrientation(_ image: UIImage) -> UIImage {
+        guard image.imageOrientation != .up else { return image }
+        
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return normalizedImage ?? image
     }
 }
 
