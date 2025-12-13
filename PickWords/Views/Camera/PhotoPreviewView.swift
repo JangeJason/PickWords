@@ -238,8 +238,9 @@ struct ImageCropView: View {
     let onCrop: (UIImage) -> Void
     let onCancel: () -> Void
     
-    @State private var cropRect = CGRect(x: 50, y: 100, width: 250, height: 250)
-    @State private var imageSize = CGSize.zero
+    @State private var cropRect = CGRect(x: 50, y: 100, width: 200, height: 200)
+    @State private var imageFrame = CGRect.zero
+    @State private var viewSize = CGSize.zero
     
     var body: some View {
         ZStack {
@@ -247,30 +248,51 @@ struct ImageCropView: View {
             
             VStack {
                 // 标题
-                Text("拖动选择目标物品")
+                Text("拖动调整选择区域")
                     .font(.system(size: 18, weight: .medium, design: .rounded))
                     .foregroundStyle(.white)
                     .padding(.top, 60)
+                
+                Text("拖动四角可调整大小")
+                    .font(.system(size: 14, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .padding(.top, 8)
                 
                 Spacer()
                 
                 // 图片和裁剪框
                 GeometryReader { geometry in
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: geometry.size.width, maxHeight: geometry.size.height)
-                        .background(
-                            GeometryReader { imageGeometry in
-                                Color.clear.onAppear {
-                                    imageSize = imageGeometry.size
-                                }
-                            }
+                    let imageAspect = image.size.width / image.size.height
+                    let frameWidth = min(geometry.size.width, geometry.size.height * imageAspect)
+                    let frameHeight = frameWidth / imageAspect
+                    let offsetX = (geometry.size.width - frameWidth) / 2
+                    let offsetY = (geometry.size.height - frameHeight) / 2
+                    
+                    ZStack {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: frameWidth, height: frameHeight)
+                        
+                        // 裁剪框
+                        CropOverlay(
+                            cropRect: $cropRect,
+                            bounds: CGSize(width: frameWidth, height: frameHeight)
                         )
-                        .overlay(
-                            // 裁剪框
-                            CropOverlay(cropRect: $cropRect, bounds: geometry.size)
+                        .frame(width: frameWidth, height: frameHeight)
+                    }
+                    .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+                    .onAppear {
+                        viewSize = geometry.size
+                        imageFrame = CGRect(x: offsetX, y: offsetY, width: frameWidth, height: frameHeight)
+                        // 初始化裁剪框在图片中央
+                        cropRect = CGRect(
+                            x: (frameWidth - 200) / 2,
+                            y: (frameHeight - 200) / 2,
+                            width: 200,
+                            height: 200
                         )
+                    }
                 }
                 .padding()
                 
@@ -310,9 +332,24 @@ struct ImageCropView: View {
     }
     
     private func cropImage() {
-        // 简化版裁剪，实际裁剪需要计算坐标映射
-        let cropped = image // 暂时返回原图
-        onCrop(cropped)
+        // 计算裁剪区域在原图中的位置
+        let scaleX = image.size.width / imageFrame.width
+        let scaleY = image.size.height / imageFrame.height
+        
+        let cropX = cropRect.origin.x * scaleX
+        let cropY = cropRect.origin.y * scaleY
+        let cropW = cropRect.width * scaleX
+        let cropH = cropRect.height * scaleY
+        
+        let cropArea = CGRect(x: cropX, y: cropY, width: cropW, height: cropH)
+        
+        guard let cgImage = image.cgImage?.cropping(to: cropArea) else {
+            onCrop(image)
+            return
+        }
+        
+        let croppedImage = UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+        onCrop(croppedImage)
     }
 }
 
@@ -320,6 +357,17 @@ struct ImageCropView: View {
 struct CropOverlay: View {
     @Binding var cropRect: CGRect
     let bounds: CGSize
+    
+    @State private var dragStart: CGPoint = .zero
+    @State private var initialRect: CGRect = .zero
+    @State private var activeCorner: Corner? = nil
+    
+    enum Corner {
+        case topLeft, topRight, bottomLeft, bottomRight, center
+    }
+    
+    private let cornerSize: CGFloat = 44
+    private let minSize: CGFloat = 80
     
     var body: some View {
         ZStack {
@@ -329,7 +377,7 @@ struct CropOverlay: View {
                 .mask(
                     Rectangle()
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
+                            Rectangle()
                                 .frame(width: cropRect.width, height: cropRect.height)
                                 .position(x: cropRect.midX, y: cropRect.midY)
                                 .blendMode(.destinationOut)
@@ -337,24 +385,147 @@ struct CropOverlay: View {
                 )
             
             // 裁剪框边框
-            RoundedRectangle(cornerRadius: 8)
+            Rectangle()
                 .stroke(.white, lineWidth: 2)
                 .frame(width: cropRect.width, height: cropRect.height)
                 .position(x: cropRect.midX, y: cropRect.midY)
+            
+            // 四个角的拖拽手柄
+            cornerHandle(at: .topLeft)
+            cornerHandle(at: .topRight)
+            cornerHandle(at: .bottomLeft)
+            cornerHandle(at: .bottomRight)
         }
+        .contentShape(Rectangle())
         .gesture(
-            DragGesture()
+            DragGesture(minimumDistance: 0)
                 .onChanged { value in
-                    let newX = min(max(cropRect.width / 2, cropRect.midX + value.translation.width), bounds.width - cropRect.width / 2)
-                    let newY = min(max(cropRect.height / 2, cropRect.midY + value.translation.height), bounds.height - cropRect.height / 2)
-                    cropRect = CGRect(
-                        x: newX - cropRect.width / 2,
-                        y: newY - cropRect.height / 2,
-                        width: cropRect.width,
-                        height: cropRect.height
+                    if dragStart == .zero {
+                        dragStart = value.startLocation
+                        initialRect = cropRect
+                        activeCorner = detectCorner(at: value.startLocation)
+                    }
+                    
+                    let delta = CGSize(
+                        width: value.location.x - dragStart.x,
+                        height: value.location.y - dragStart.y
                     )
+                    
+                    updateCropRect(delta: delta)
+                }
+                .onEnded { _ in
+                    dragStart = .zero
+                    activeCorner = nil
                 }
         )
+    }
+    
+    private func cornerHandle(at corner: Corner) -> some View {
+        let position: CGPoint = {
+            switch corner {
+            case .topLeft: return CGPoint(x: cropRect.minX, y: cropRect.minY)
+            case .topRight: return CGPoint(x: cropRect.maxX, y: cropRect.minY)
+            case .bottomLeft: return CGPoint(x: cropRect.minX, y: cropRect.maxY)
+            case .bottomRight: return CGPoint(x: cropRect.maxX, y: cropRect.maxY)
+            case .center: return CGPoint(x: cropRect.midX, y: cropRect.midY)
+            }
+        }()
+        
+        return ZStack {
+            // 角落 L 形标记
+            CornerMark(corner: corner)
+                .stroke(.white, lineWidth: 3)
+                .frame(width: 20, height: 20)
+        }
+        .position(position)
+    }
+    
+    private func detectCorner(at point: CGPoint) -> Corner {
+        let corners: [(Corner, CGPoint)] = [
+            (.topLeft, CGPoint(x: cropRect.minX, y: cropRect.minY)),
+            (.topRight, CGPoint(x: cropRect.maxX, y: cropRect.minY)),
+            (.bottomLeft, CGPoint(x: cropRect.minX, y: cropRect.maxY)),
+            (.bottomRight, CGPoint(x: cropRect.maxX, y: cropRect.maxY))
+        ]
+        
+        for (corner, pos) in corners {
+            if abs(point.x - pos.x) < cornerSize && abs(point.y - pos.y) < cornerSize {
+                return corner
+            }
+        }
+        
+        return .center
+    }
+    
+    private func updateCropRect(delta: CGSize) {
+        var newRect = initialRect
+        
+        switch activeCorner {
+        case .topLeft:
+            newRect.origin.x = min(initialRect.origin.x + delta.width, initialRect.maxX - minSize)
+            newRect.origin.y = min(initialRect.origin.y + delta.height, initialRect.maxY - minSize)
+            newRect.size.width = initialRect.maxX - newRect.origin.x
+            newRect.size.height = initialRect.maxY - newRect.origin.y
+            
+        case .topRight:
+            newRect.origin.y = min(initialRect.origin.y + delta.height, initialRect.maxY - minSize)
+            newRect.size.width = max(initialRect.width + delta.width, minSize)
+            newRect.size.height = initialRect.maxY - newRect.origin.y
+            
+        case .bottomLeft:
+            newRect.origin.x = min(initialRect.origin.x + delta.width, initialRect.maxX - minSize)
+            newRect.size.width = initialRect.maxX - newRect.origin.x
+            newRect.size.height = max(initialRect.height + delta.height, minSize)
+            
+        case .bottomRight:
+            newRect.size.width = max(initialRect.width + delta.width, minSize)
+            newRect.size.height = max(initialRect.height + delta.height, minSize)
+            
+        case .center, .none:
+            newRect.origin.x = initialRect.origin.x + delta.width
+            newRect.origin.y = initialRect.origin.y + delta.height
+        }
+        
+        // 限制在边界内
+        newRect.origin.x = max(0, min(newRect.origin.x, bounds.width - newRect.width))
+        newRect.origin.y = max(0, min(newRect.origin.y, bounds.height - newRect.height))
+        newRect.size.width = min(newRect.width, bounds.width - newRect.origin.x)
+        newRect.size.height = min(newRect.height, bounds.height - newRect.origin.y)
+        
+        cropRect = newRect
+    }
+}
+
+// MARK: - 角落 L 形标记
+struct CornerMark: Shape {
+    let corner: CropOverlay.Corner
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let length: CGFloat = 20
+        
+        switch corner {
+        case .topLeft:
+            path.move(to: CGPoint(x: 0, y: length))
+            path.addLine(to: CGPoint(x: 0, y: 0))
+            path.addLine(to: CGPoint(x: length, y: 0))
+        case .topRight:
+            path.move(to: CGPoint(x: rect.width - length, y: 0))
+            path.addLine(to: CGPoint(x: rect.width, y: 0))
+            path.addLine(to: CGPoint(x: rect.width, y: length))
+        case .bottomLeft:
+            path.move(to: CGPoint(x: 0, y: rect.height - length))
+            path.addLine(to: CGPoint(x: 0, y: rect.height))
+            path.addLine(to: CGPoint(x: length, y: rect.height))
+        case .bottomRight:
+            path.move(to: CGPoint(x: rect.width - length, y: rect.height))
+            path.addLine(to: CGPoint(x: rect.width, y: rect.height))
+            path.addLine(to: CGPoint(x: rect.width, y: rect.height - length))
+        case .center:
+            break
+        }
+        
+        return path
     }
 }
 
