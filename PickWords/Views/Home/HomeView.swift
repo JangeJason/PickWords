@@ -45,6 +45,25 @@ struct HomeView: View {
                 cameraButton
             }
         }
+        .gesture(
+            DragGesture(minimumDistance: 50, coordinateSpace: .local)
+                .onEnded { value in
+                    let horizontalAmount = value.translation.width
+                    if horizontalAmount < -50 {
+                        // 向左滑动 → 下一天（但不能超过今天）
+                        if !isToday {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
+                            }
+                        }
+                    } else if horizontalAmount > 50 {
+                        // 向右滑动 → 前一天
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+                        }
+                    }
+                }
+        )
         .fullScreenCover(isPresented: $showCamera) {
             CameraView()
         }
@@ -52,7 +71,7 @@ struct HomeView: View {
             WordCardDetailView(wordCard: card)
         }
         .sheet(isPresented: $showSettings) {
-            APIKeySettingView()
+            SettingsMenuView()
         }
         .onAppear {
             startPulseAnimation()
