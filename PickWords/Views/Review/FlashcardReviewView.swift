@@ -122,22 +122,31 @@ struct FlashcardReviewView: View {
         }
     }
     
-    // MARK: - 卡片正面（图片）
+    // MARK: - 卡片正面（中文释义）
     private func cardFront(for card: WordCard) -> some View {
-        VStack {
+        VStack(spacing: 24) {
+            // 图片
             if let uiImage = UIImage(data: card.imageData) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFit()
-                    .frame(maxHeight: 280)
+                    .frame(maxHeight: 200)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            
+            // 中文释义
+            HStack {
+                Text("💭")
+                Text(card.translation)
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .foregroundStyle(AppTheme.textPrimary)
             }
             
             Spacer()
             
             HStack {
                 Text("👆")
-                Text("点击翻转查看答案")
+                Text("点击翻转查看英文")
                     .font(.system(size: 14, design: .rounded))
                     .foregroundStyle(AppTheme.textSecondary)
             }
@@ -150,10 +159,10 @@ struct FlashcardReviewView: View {
         .shadow(color: AppTheme.pink.opacity(0.2), radius: 15, y: 8)
     }
     
-    // MARK: - 卡片背面（单词信息）
+    // MARK: - 卡片背面（英文单词信息）
     private func cardBack(for card: WordCard) -> some View {
         VStack(spacing: 16) {
-            // 单词
+            // 英文单词
             Text(card.word)
                 .font(.system(size: 32, weight: .bold, design: .rounded))
                 .foregroundStyle(AppTheme.pink)
@@ -162,18 +171,6 @@ struct FlashcardReviewView: View {
             Text(card.phonetic)
                 .font(.system(size: 18, design: .rounded))
                 .foregroundStyle(AppTheme.textSecondary)
-            
-            Divider()
-                .background(AppTheme.lavender)
-                .padding(.horizontal, 40)
-            
-            // 释义
-            HStack {
-                Text("💭")
-                Text(card.translation)
-                    .font(.system(size: 22, weight: .medium, design: .rounded))
-                    .foregroundStyle(AppTheme.textPrimary)
-            }
             
             Divider()
                 .background(AppTheme.lavender)
