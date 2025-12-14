@@ -157,41 +157,18 @@ struct EmptyStateView: View {
                 // 装饰圆圈
                 Circle()
                     .fill(AppTheme.pink.opacity(0.1))
-                    .frame(width: 140, height: 140)
+                    .frame(width: 120, height: 120)
                 
                 Circle()
                     .fill(AppTheme.lavender.opacity(0.15))
-                    .frame(width: 110, height: 110)
+                    .frame(width: 90, height: 90)
                 
                 // 图标
                 Image(systemName: icon)
-                    .font(.system(size: 50))
+                    .font(.system(size: 44))
                     .foregroundStyle(AppTheme.primaryGradient)
-                    .scaleEffect(isAnimating ? 1.1 : 1.0)
-                    .animation(
-                        .easeInOut(duration: 1.5).repeatForever(autoreverses: true),
-                        value: isAnimating
-                    )
-                
-                // 装饰星星
-                Text("✨")
-                    .font(.system(size: 24))
-                    .offset(x: 50, y: -40)
-                    .rotationEffect(.degrees(isAnimating ? 10 : -10))
-                    .animation(
-                        .easeInOut(duration: 2).repeatForever(autoreverses: true),
-                        value: isAnimating
-                    )
-                
-                Text("🌸")
-                    .font(.system(size: 20))
-                    .offset(x: -55, y: 30)
-                    .rotationEffect(.degrees(isAnimating ? -5 : 5))
-                    .animation(
-                        .easeInOut(duration: 1.8).repeatForever(autoreverses: true),
-                        value: isAnimating
-                    )
             }
+            .frame(width: 120, height: 120)
             
             VStack(spacing: 10) {
                 Text(title)
