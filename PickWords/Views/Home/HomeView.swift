@@ -28,6 +28,7 @@ struct HomeView: View {
     @State private var pulseAnimation = false
     @State private var flipRotation: Double = 0
     @State private var isFlipping = false
+    @State private var flipAnchor: UnitPoint = .leading
     
     var body: some View {
         ZStack {
@@ -43,8 +44,21 @@ struct HomeView: View {
                 
                 Spacer()
                 
+                // 滑动提示
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.left")
+                        .font(.system(size: 12))
+                    Text("左右滑动切换日期")
+                        .font(.system(size: 13, design: .rounded))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 12))
+                }
+                .foregroundStyle(AppTheme.textSecondary.opacity(0.5))
+                .padding(.bottom, 16)
+                
                 // 底部相机按钮
                 cameraButton
+                    .padding(.bottom, 20)
             }
         }
         .gesture(
@@ -190,52 +204,56 @@ struct HomeView: View {
         .rotation3DEffect(
             .degrees(flipRotation),
             axis: (x: 0, y: 1, z: 0),
-            anchor: .leading,
+            anchor: flipAnchor,
             perspective: 0.5
         )
         .opacity(1 - abs(flipRotation) / 120)
     }
     
     // MARK: - 翻页动画
+    // 向左滑 → 下一天：右边翘起，从右边翻出
     private func flipToNextDay() {
         guard !isFlipping else { return }
         isFlipping = true
+        flipAnchor = .trailing // 右边为轴心
         
-        withAnimation(.easeIn(duration: 0.25)) {
-            flipRotation = -90
+        withAnimation(.easeIn(duration: 0.2)) {
+            flipRotation = 90 // 向左翻（右边翘起）
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
-            flipRotation = 90
+            flipRotation = -90
             
-            withAnimation(.easeOut(duration: 0.25)) {
+            withAnimation(.easeOut(duration: 0.2)) {
                 flipRotation = 0
             }
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 isFlipping = false
             }
         }
     }
     
+    // 向右滑 → 前一天：左边翘起，从左边翻出
     private func flipToPreviousDay() {
         guard !isFlipping else { return }
         isFlipping = true
+        flipAnchor = .leading // 左边为轴心
         
-        withAnimation(.easeIn(duration: 0.25)) {
-            flipRotation = 90
+        withAnimation(.easeIn(duration: 0.2)) {
+            flipRotation = -90 // 向右翻（左边翘起）
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-            flipRotation = -90
+            flipRotation = 90
             
-            withAnimation(.easeOut(duration: 0.25)) {
+            withAnimation(.easeOut(duration: 0.2)) {
                 flipRotation = 0
             }
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 isFlipping = false
             }
         }
