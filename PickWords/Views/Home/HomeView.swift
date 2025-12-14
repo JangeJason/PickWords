@@ -357,7 +357,7 @@ struct HomeView: View {
             }
             .scaleEffect(cameraButtonScale)
         }
-        .padding(.bottom, 50)
+        .padding(.bottom, -10)
     }
     
     // 脉冲动画

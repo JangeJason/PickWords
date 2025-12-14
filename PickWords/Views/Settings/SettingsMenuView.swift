@@ -191,27 +191,38 @@ struct DailyReviewRow: View {
     let date: Date
     let count: Int
     
+    private var isToday: Bool {
+        Calendar.current.isDateInToday(date)
+    }
+    
     private var dateString: String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_CN")
-        
-        let calendar = Calendar.current
-        if calendar.isDateInToday(date) {
-            return "今天"
-        } else if calendar.isDateInYesterday(date) {
-            return "昨天"
-        } else {
-            formatter.dateFormat = "M月d日 EEEE"
-            return formatter.string(from: date)
-        }
+        formatter.dateFormat = "M月d日 EEEE"
+        return formatter.string(from: date)
     }
     
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(dateString)
-                    .font(.system(size: 17, weight: .medium, design: .rounded))
-                    .foregroundStyle(AppTheme.textPrimary)
+                HStack(spacing: 8) {
+                    Text(dateString)
+                        .font(.system(size: 17, weight: .medium, design: .rounded))
+                        .foregroundStyle(AppTheme.textPrimary)
+                    
+                    // 今天标签
+                    if isToday {
+                        Text("今天")
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(
+                                Capsule()
+                                    .fill(AppTheme.pink)
+                            )
+                    }
+                }
                 
                 Text("\(count) 个单词")
                     .font(.system(size: 14, design: .rounded))
