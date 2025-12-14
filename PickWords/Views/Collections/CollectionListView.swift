@@ -156,6 +156,7 @@ struct CreateCollectionView: View {
     
     @State private var name = ""
     @State private var selectedEmoji = "📁"
+    @FocusState private var isNameFocused: Bool
     
     private let emojis = ["📁", "🍳", "🛒", "✈️", "🏠", "🏢", "🎮", "📚", "🎵", "🏃", "🍔", "☕️", "🌳", "🚗", "👕", "💻", "🎀", "🌸", "⭐️", "💖", "🦋", "🌈", "🍰", "🧸"]
     
@@ -166,8 +167,8 @@ struct CreateCollectionView: View {
                 
                 ScrollView {
                     VStack(spacing: 24) {
-                        // 预览卡片
-                        VStack(spacing: 12) {
+                        // 预览卡片 + 名称输入
+                        VStack(spacing: 16) {
                             ZStack {
                                 Circle()
                                     .fill(AppTheme.lavender.opacity(0.2))
@@ -177,15 +178,21 @@ struct CreateCollectionView: View {
                                     .font(.system(size: 40))
                             }
                             
-                            Text(name.isEmpty ? "收藏集名称" : name)
+                            // 名称输入框
+                            TextField("输入收藏集名称", text: $name)
                                 .font(.system(size: 18, weight: .semibold, design: .rounded))
-                                .foregroundStyle(name.isEmpty ? AppTheme.textSecondary : AppTheme.textPrimary)
+                                .multilineTextAlignment(.center)
+                                .foregroundStyle(AppTheme.textPrimary)
+                                .focused($isNameFocused)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 24)
                         .background(AppTheme.cardBackground)
                         .clipShape(RoundedRectangle(cornerRadius: AppTheme.cornerRadiusLarge))
                         .shadow(color: AppTheme.pink.opacity(0.1), radius: 10, y: 4)
+                        .onTapGesture {
+                            isNameFocused = true
+                        }
                         
                         // 选择图标
                         VStack(alignment: .leading, spacing: 12) {
@@ -211,22 +218,6 @@ struct CreateCollectionView: View {
                                         }
                                 }
                             }
-                        }
-                        .padding()
-                        .background(AppTheme.cardBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: AppTheme.cornerRadiusLarge))
-                        
-                        // 输入名称
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("📝 收藏集名称")
-                                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                .foregroundStyle(AppTheme.textSecondary)
-                            
-                            TextField("输入名称...", text: $name)
-                                .font(.system(size: 16, design: .rounded))
-                                .padding()
-                                .background(AppTheme.secondaryBackground)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                         .padding()
                         .background(AppTheme.cardBackground)
