@@ -15,7 +15,6 @@ struct CollectionListView: View {
                 // 可爱粉色背景
                 AppTheme.background
                     .ignoresSafeArea()
-                
                 if collections.isEmpty {
                     emptyStateView
                 } else {
@@ -356,75 +355,48 @@ struct CollectionDetailView: View {
     }
     
     var body: some View {
-        Group {
+        ZStack {
+            AppTheme.background.ignoresSafeArea()
+            
             if wordCards.isEmpty {
                 VStack(spacing: 20) {
                     Text(collection.icon)
                         .font(.system(size: 60))
                     
                     Text("暂无单词")
-                        .font(.title2)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
+                        .foregroundStyle(AppTheme.textSecondary)
                     
                     Text("拍照识别单词时可添加到此收藏集")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 14, design: .rounded))
+                        .foregroundStyle(AppTheme.textSecondary.opacity(0.7))
                 }
             } else {
                 ScrollView {
-                    LazyVGrid(columns: [
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12)
-                    ], spacing: 12) {
+                    LazyVGrid(
+                        columns: [
+                            GridItem(.flexible(), spacing: 20),
+                            GridItem(.flexible(), spacing: 20)
+                        ],
+                        spacing: 30
+                    ) {
                         ForEach(wordCards) { card in
-                            CollectionWordCardCell(wordCard: card)
+                            StickerWordCard(wordCard: card)
                                 .onTapGesture {
                                     selectedCard = card
                                 }
                         }
                     }
-                    .padding()
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
                 }
             }
         }
         .navigationTitle("\(collection.icon) \(collection.name)")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $selectedCard) { card in
-            WordCardDetailSheet(wordCard: card)
+            WordCardDetailView(wordCard: card)
         }
-    }
-}
-
-// MARK: - 收藏集内的单词卡片 Cell
-struct CollectionWordCardCell: View {
-    let wordCard: WordCard
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let uiImage = UIImage(data: wordCard.imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 100)
-                    .clipped()
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(wordCard.word)
-                    .font(.headline)
-                    .lineLimit(1)
-                
-                Text(wordCard.translation)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 8)
-        }
-        .background(.background)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
     }
 }
 

@@ -301,27 +301,40 @@ struct DailyReviewView: View {
                                 .frame(maxHeight: 180)
                         }
                         
-                        // 单词
-                        Text(card.word)
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .foregroundStyle(AppTheme.pink)
+                        // 中文释义（默认显示）
+                        HStack {
+                            Text("💭")
+                            Text(card.translation)
+                                .font(.system(size: 26, weight: .bold, design: .rounded))
+                                .foregroundStyle(AppTheme.textPrimary)
+                        }
                         
-                        Text(card.phonetic)
-                            .font(.system(size: 17, design: .rounded))
-                            .foregroundStyle(AppTheme.textSecondary)
-                        
-                        // 答案区域
+                        // 答案区域（英文、音标、例句）
                         if showAnswer {
                             VStack(spacing: 12) {
                                 Divider()
                                 
-                                Text(card.translation)
-                                    .font(.system(size: 22, weight: .medium, design: .rounded))
-                                    .foregroundStyle(AppTheme.textPrimary)
+                                // 英文单词
+                                Text(card.word)
+                                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                                    .foregroundStyle(AppTheme.pink)
                                 
+                                // 音标
+                                Text(card.phonetic)
+                                    .font(.system(size: 17, design: .rounded))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                                
+                                Divider()
+                                
+                                // 例句
                                 Text(card.exampleSentence)
                                     .font(.system(size: 15, design: .rounded))
                                     .foregroundStyle(AppTheme.textSecondary)
+                                    .multilineTextAlignment(.center)
+                                
+                                Text(card.exampleTranslation)
+                                    .font(.system(size: 13, design: .rounded))
+                                    .foregroundStyle(AppTheme.textSecondary.opacity(0.8))
                                     .multilineTextAlignment(.center)
                             }
                             .transition(.opacity.combined(with: .move(edge: .bottom)))
