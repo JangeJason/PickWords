@@ -43,6 +43,7 @@ struct CameraView: View {
                 PhotoPreviewView(image: image) {
                     capturedImage = nil
                     showPreview = false
+                    dismiss() // 返回主页
                 }
             }
         }

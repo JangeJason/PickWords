@@ -26,6 +26,8 @@ struct HomeView: View {
     @State private var cameraButtonScale: CGFloat = 1.0
     @State private var cameraButtonRotation: Double = 0
     @State private var pulseAnimation = false
+    @State private var slideOffset: CGFloat = 0
+    @State private var slideDirection: Int = 0 // -1左滑, 1右滑, 0无
     
     var body: some View {
         ZStack {
@@ -36,8 +38,10 @@ struct HomeView: View {
                 // 顶部区域
                 headerView
                 
-                // 内容区域 - 今日单词
+                // 内容区域 - 今日单词（带翻页动画）
                 contentView
+                    .offset(x: slideOffset)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: slideOffset)
                 
                 Spacer()
                 
@@ -46,20 +50,51 @@ struct HomeView: View {
             }
         }
         .gesture(
-            DragGesture(minimumDistance: 50, coordinateSpace: .local)
+            DragGesture(minimumDistance: 30, coordinateSpace: .local)
+                .onChanged { value in
+                    // 实时跟手
+                    slideOffset = value.translation.width * 0.3
+                }
                 .onEnded { value in
                     let horizontalAmount = value.translation.width
+                    let screenWidth = UIScreen.main.bounds.width
+                    
                     if horizontalAmount < -50 {
                         // 向左滑动 → 下一天（但不能超过今天）
                         if !isToday {
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                            // 滑出动画
+                            withAnimation(.easeOut(duration: 0.15)) {
+                                slideOffset = -screenWidth
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                                 selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
+                                slideOffset = screenWidth
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    slideOffset = 0
+                                }
+                            }
+                        } else {
+                            // 回弹
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                slideOffset = 0
                             }
                         }
                     } else if horizontalAmount > 50 {
                         // 向右滑动 → 前一天
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        withAnimation(.easeOut(duration: 0.15)) {
+                            slideOffset = screenWidth
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                             selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+                            slideOffset = -screenWidth
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                slideOffset = 0
+                            }
+                        }
+                    } else {
+                        // 回弹
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            slideOffset = 0
                         }
                     }
                 }
