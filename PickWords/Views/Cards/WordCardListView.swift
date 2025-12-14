@@ -189,7 +189,7 @@ struct WordCardDetailView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         // 图片卡片
-                        ZStack {
+                        VStack {
                             if let uiImage = UIImage(data: wordCard.imageData) {
                                 Image(uiImage: uiImage)
                                     .resizable()

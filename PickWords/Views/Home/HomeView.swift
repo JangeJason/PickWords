@@ -26,6 +26,9 @@ struct HomeView: View {
     @State private var cameraButtonScale: CGFloat = 1.0
     @State private var cameraButtonRotation: Double = 0
     @State private var pulseAnimation = false
+    @State private var cardOffset: CGFloat = 0
+    @State private var cardOpacity: Double = 1
+    @State private var isAnimating = false
     
     var body: some View {
         ZStack {
@@ -36,13 +39,14 @@ struct HomeView: View {
                 // 顶部区域
                 headerView
                 
-                // 内容区域 - 今日单词
-                contentView
+                // 内容区域 - 大卡片包装
+                cardContentView
                 
                 Spacer()
                 
-                // 底部相机按钮
-                cameraButton
+                // 底部控制区：左箭头 + 相机 + 右箭头
+                bottomControlsView
+                    .padding(.bottom, 30)
             }
         }
         .fullScreenCover(isPresented: $showCamera) {
@@ -52,7 +56,7 @@ struct HomeView: View {
             WordCardDetailView(wordCard: card)
         }
         .sheet(isPresented: $showSettings) {
-            APIKeySettingView()
+            SettingsMenuView()
         }
         .onAppear {
             startPulseAnimation()
@@ -70,41 +74,11 @@ struct HomeView: View {
             
             Spacer()
             
-            // 中间 - 日期和今日单词数（带左右箭头）
+            // 中间 - 日期和今日单词数
             VStack(spacing: 6) {
-                // 日期切换区域
-                HStack(spacing: 16) {
-                    // 左箭头（前一天）
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-                        }
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .frame(width: 32, height: 32)
-                    }
-                    
-                    // 日期
-                    Text(formattedDate)
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .frame(minWidth: 100)
-                    
-                    // 右箭头（后一天，不能超过今天）
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
-                        }
-                    } label: {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(isToday ? AppTheme.textSecondary.opacity(0.3) : AppTheme.textSecondary)
-                            .frame(width: 32, height: 32)
-                    }
-                    .disabled(isToday)
-                }
+                Text(formattedDate)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(AppTheme.textPrimary)
                 
                 Text(dateSummaryText)
                     .font(.system(size: 14, design: .rounded))
@@ -154,13 +128,119 @@ struct HomeView: View {
         }
     }
     
-    // MARK: - 内容区域
-    private var contentView: some View {
+    // MARK: - 大卡片内容区域（带丝滑动画）
+    private var cardContentView: some View {
         ScrollView {
             if selectedDateWordCards.isEmpty {
                 emptyStateView
             } else {
                 wordCardsGrid
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(AppTheme.cardBackground)
+                .shadow(color: .black.opacity(0.08), radius: 20, y: 10)
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .offset(x: cardOffset)
+        .opacity(cardOpacity)
+        .scaleEffect(cardOpacity == 1 ? 1 : 0.95)
+    }
+    
+    // MARK: - 底部控制区
+    private var bottomControlsView: some View {
+        HStack(alignment: .bottom, spacing: 40) {
+            // 左箭头 - 前一天
+            Button {
+                goToPreviousDay()
+            } label: {
+                Circle()
+                    .fill(AppTheme.lavender.opacity(0.15))
+                    .frame(width: 56, height: 56)
+                    .overlay(
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(AppTheme.lavender)
+                    )
+            }
+            .disabled(isAnimating)
+            .padding(.bottom, 20) // 与相机按钮底部对齐
+            
+            // 相机按钮
+            cameraButton
+            
+            // 右箭头 - 后一天
+            Button {
+                goToNextDay()
+            } label: {
+                Circle()
+                    .fill(isToday ? AppTheme.textSecondary.opacity(0.1) : AppTheme.lavender.opacity(0.15))
+                    .frame(width: 56, height: 56)
+                    .overlay(
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(isToday ? AppTheme.textSecondary.opacity(0.3) : AppTheme.lavender)
+                    )
+            }
+            .disabled(isToday || isAnimating)
+            .padding(.bottom, 20) // 与相机按钮底部对齐
+        }
+    }
+    
+    // MARK: - 丝滑切换动画
+    private func goToNextDay() {
+        guard !isAnimating, !isToday else { return }
+        isAnimating = true
+        
+        // 向左滑出
+        withAnimation(.easeInOut(duration: 0.15)) {
+            cardOffset = -50
+            cardOpacity = 0
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            // 切换日期
+            selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
+            cardOffset = 50
+            
+            // 从右滑入
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                cardOffset = 0
+                cardOpacity = 1
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                isAnimating = false
+            }
+        }
+    }
+    
+    private func goToPreviousDay() {
+        guard !isAnimating else { return }
+        isAnimating = true
+        
+        // 向右滑出
+        withAnimation(.easeInOut(duration: 0.15)) {
+            cardOffset = 50
+            cardOpacity = 0
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            // 切换日期
+            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+            cardOffset = -50
+            
+            // 从左滑入
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                cardOffset = 0
+                cardOpacity = 1
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                isAnimating = false
             }
         }
     }
@@ -277,7 +357,7 @@ struct HomeView: View {
             }
             .scaleEffect(cameraButtonScale)
         }
-        .padding(.bottom, 50)
+        .padding(.bottom, -10)
     }
     
     // 脉冲动画
