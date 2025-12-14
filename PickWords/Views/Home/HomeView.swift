@@ -26,8 +26,8 @@ struct HomeView: View {
     @State private var cameraButtonScale: CGFloat = 1.0
     @State private var cameraButtonRotation: Double = 0
     @State private var pulseAnimation = false
-    @State private var slideOffset: CGFloat = 0
-    @State private var slideDirection: Int = 0 // -1左滑, 1右滑, 0无
+    @State private var flipRotation: Double = 0
+    @State private var isFlipping = false
     
     var body: some View {
         ZStack {
@@ -38,10 +38,8 @@ struct HomeView: View {
                 // 顶部区域
                 headerView
                 
-                // 内容区域 - 今日单词（带翻页动画）
-                contentView
-                    .offset(x: slideOffset)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: slideOffset)
+                // 内容区域 - 大卡片包装
+                cardContentView
                 
                 Spacer()
                 
@@ -50,52 +48,19 @@ struct HomeView: View {
             }
         }
         .gesture(
-            DragGesture(minimumDistance: 30, coordinateSpace: .local)
-                .onChanged { value in
-                    // 实时跟手
-                    slideOffset = value.translation.width * 0.3
-                }
+            DragGesture(minimumDistance: 50, coordinateSpace: .local)
                 .onEnded { value in
+                    guard !isFlipping else { return }
                     let horizontalAmount = value.translation.width
-                    let screenWidth = UIScreen.main.bounds.width
                     
                     if horizontalAmount < -50 {
                         // 向左滑动 → 下一天（但不能超过今天）
                         if !isToday {
-                            // 滑出动画
-                            withAnimation(.easeOut(duration: 0.15)) {
-                                slideOffset = -screenWidth
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
-                                slideOffset = screenWidth
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                    slideOffset = 0
-                                }
-                            }
-                        } else {
-                            // 回弹
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                slideOffset = 0
-                            }
+                            flipToNextDay()
                         }
                     } else if horizontalAmount > 50 {
                         // 向右滑动 → 前一天
-                        withAnimation(.easeOut(duration: 0.15)) {
-                            slideOffset = screenWidth
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-                            slideOffset = -screenWidth
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                slideOffset = 0
-                            }
-                        }
-                    } else {
-                        // 回弹
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            slideOffset = 0
-                        }
+                        flipToPreviousDay()
                     }
                 }
         )
@@ -130,15 +95,14 @@ struct HomeView: View {
                 HStack(spacing: 16) {
                     // 左箭头（前一天）
                     Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-                        }
+                        flipToPreviousDay()
                     } label: {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(AppTheme.textSecondary)
                             .frame(width: 32, height: 32)
                     }
+                    .disabled(isFlipping)
                     
                     // 日期
                     Text(formattedDate)
@@ -148,16 +112,14 @@ struct HomeView: View {
                     
                     // 右箭头（后一天，不能超过今天）
                     Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
-                        }
+                        flipToNextDay()
                     } label: {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(isToday ? AppTheme.textSecondary.opacity(0.3) : AppTheme.textSecondary)
                             .frame(width: 32, height: 32)
                     }
-                    .disabled(isToday)
+                    .disabled(isToday || isFlipping)
                 }
                 
                 Text(dateSummaryText)
@@ -208,13 +170,73 @@ struct HomeView: View {
         }
     }
     
-    // MARK: - 内容区域
-    private var contentView: some View {
+    // MARK: - 大卡片内容区域（带翻页动画）
+    private var cardContentView: some View {
         ScrollView {
             if selectedDateWordCards.isEmpty {
                 emptyStateView
             } else {
                 wordCardsGrid
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(AppTheme.cardBackground)
+                .shadow(color: .black.opacity(0.08), radius: 20, y: 10)
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .rotation3DEffect(
+            .degrees(flipRotation),
+            axis: (x: 0, y: 1, z: 0),
+            anchor: .leading,
+            perspective: 0.5
+        )
+        .opacity(1 - abs(flipRotation) / 120)
+    }
+    
+    // MARK: - 翻页动画
+    private func flipToNextDay() {
+        guard !isFlipping else { return }
+        isFlipping = true
+        
+        withAnimation(.easeIn(duration: 0.25)) {
+            flipRotation = -90
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
+            flipRotation = 90
+            
+            withAnimation(.easeOut(duration: 0.25)) {
+                flipRotation = 0
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                isFlipping = false
+            }
+        }
+    }
+    
+    private func flipToPreviousDay() {
+        guard !isFlipping else { return }
+        isFlipping = true
+        
+        withAnimation(.easeIn(duration: 0.25)) {
+            flipRotation = 90
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+            flipRotation = -90
+            
+            withAnimation(.easeOut(duration: 0.25)) {
+                flipRotation = 0
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                isFlipping = false
             }
         }
     }
