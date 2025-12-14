@@ -17,75 +17,85 @@ struct StickerPreviewView: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                // 预览图
-                if let image = stickerImage {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .shadow(color: .black.opacity(0.2), radius: 10, y: 5)
-                        .padding(.horizontal)
-                } else {
-                    ProgressView()
-                        .frame(height: 300)
-                }
+            ZStack {
+                AppTheme.background.ignoresSafeArea()
                 
-                // 样式选择
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("贴纸样式")
-                        .font(.headline)
-                        .padding(.horizontal)
+                VStack(spacing: 24) {
+                    // 预览图
+                    if let image = stickerImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .shadow(color: AppTheme.pink.opacity(0.3), radius: 15, y: 8)
+                            .padding(.horizontal, 24)
+                    } else {
+                        ProgressView()
+                            .frame(height: 300)
+                            .tint(AppTheme.pink)
+                    }
                     
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(StickerService.StickerStyle.allCases, id: \.self) { style in
-                                StyleButton(
-                                    style: style,
-                                    isSelected: selectedStyle == style
-                                ) {
-                                    selectedStyle = style
-                                    generateSticker()
+                    // 样式选择
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("✨ 贴纸样式")
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .padding(.horizontal, 24)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 16) {
+                                ForEach(StickerService.StickerStyle.allCases, id: \.self) { style in
+                                    StyleButton(
+                                        style: style,
+                                        isSelected: selectedStyle == style
+                                    ) {
+                                        selectedStyle = style
+                                        generateSticker()
+                                    }
                                 }
                             }
+                            .padding(.horizontal, 24)
                         }
-                        .padding(.horizontal)
                     }
-                }
-                
-                Spacer()
-                
-                // 保存按钮
-                Button {
-                    saveToAlbum()
-                } label: {
-                    HStack {
-                        if isSaving {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Image(systemName: "square.and.arrow.down")
+                    
+                    Spacer()
+                    
+                    // 保存按钮
+                    Button {
+                        saveToAlbum()
+                    } label: {
+                        HStack {
+                            if isSaving {
+                                ProgressView()
+                                    .tint(.white)
+                            } else {
+                                Image(systemName: "square.and.arrow.down")
+                            }
+                            Text("保存到相册")
                         }
-                        Text("保存到相册")
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(AppTheme.pink)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: AppTheme.pink.opacity(0.4), radius: 10, y: 5)
                     }
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(.blue)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .disabled(isSaving || stickerImage == nil)
+                    .opacity(isSaving || stickerImage == nil ? 0.6 : 1)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
                 }
-                .disabled(isSaving || stickerImage == nil)
-                .padding(.horizontal)
             }
-            .padding(.vertical)
-            .navigationTitle("生成贴纸")
+            .navigationTitle("🎨 生成贴纸")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("取消") {
                         dismiss()
                     }
+                    .font(.system(size: 15, design: .rounded))
+                    .foregroundStyle(AppTheme.pink)
                 }
             }
             .onAppear {
@@ -145,39 +155,42 @@ struct StyleButton: View {
     
     private var styleColor: Color {
         switch style {
-        case .classic: return .black
-        case .modern: return .white
-        case .minimal: return .blue
-        case .colorful: return .orange
+        case .classic: return .white
+        case .modern: return Color(red: 0.15, green: 0.15, blue: 0.15)
+        case .minimal: return Color(red: 1.0, green: 0.75, blue: 0.8)
+        case .colorful: return Color(red: 0.7, green: 0.85, blue: 1.0)
         }
     }
     
     private var textColor: Color {
         switch style {
-        case .modern: return .black
-        default: return .white
+        case .classic: return .black
+        case .modern: return .white
+        case .minimal: return .white
+        case .colorful: return Color(red: 0.2, green: 0.3, blue: 0.5)
         }
     }
     
     var body: some View {
         Button(action: action) {
             VStack(spacing: 8) {
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 12)
                     .fill(styleColor)
-                    .frame(width: 60, height: 40)
+                    .frame(width: 60, height: 44)
                     .overlay(
                         Text("Aa")
-                            .font(.headline)
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
                             .foregroundStyle(textColor)
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(isSelected ? .blue : .clear, lineWidth: 3)
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? AppTheme.pink : Color.clear, lineWidth: 3)
                     )
+                    .shadow(color: styleColor == .white ? .black.opacity(0.1) : .clear, radius: 4, y: 2)
                 
                 Text(style.rawValue)
-                    .font(.caption)
-                    .foregroundStyle(isSelected ? .blue : .secondary)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(isSelected ? AppTheme.pink : AppTheme.textSecondary)
             }
         }
     }

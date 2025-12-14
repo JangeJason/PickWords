@@ -68,17 +68,28 @@ final class StickerService {
         let padding: CGFloat = 16
         let contentRect = rect.insetBy(dx: padding, dy: padding)
         
-        // 单词
-        let wordFont = UIFont.systemFont(ofSize: rect.height * 0.35, weight: .bold)
-        let wordAttributes: [NSAttributedString.Key: Any] = [
+        // 单词 - 自适应字体大小
+        var wordFontSize = rect.height * 0.35
+        var wordFont = UIFont.systemFont(ofSize: wordFontSize, weight: .bold)
+        var wordAttributes: [NSAttributedString.Key: Any] = [
             .font: wordFont,
             .foregroundColor: config.textColor
         ]
-        let wordSize = word.size(withAttributes: wordAttributes)
+        var wordSize = word.size(withAttributes: wordAttributes)
+        
+        // 如果单词太长，缩小字体
+        let maxWordWidth = contentRect.width * 0.65
+        while wordSize.width > maxWordWidth && wordFontSize > rect.height * 0.2 {
+            wordFontSize -= 2
+            wordFont = UIFont.systemFont(ofSize: wordFontSize, weight: .bold)
+            wordAttributes[.font] = wordFont
+            wordSize = word.size(withAttributes: wordAttributes)
+        }
+        
         let wordRect = CGRect(
             x: contentRect.minX,
             y: contentRect.minY,
-            width: contentRect.width * 0.6,
+            width: maxWordWidth,
             height: wordSize.height
         )
         word.draw(in: wordRect, withAttributes: wordAttributes)
@@ -117,27 +128,27 @@ final class StickerService {
         switch style {
         case .classic:
             return (
-                UIColor.black.withAlphaComponent(0.75),
                 UIColor.white,
-                UIColor.white.withAlphaComponent(0.7)
+                UIColor.black,
+                UIColor.darkGray
             )
         case .modern:
             return (
-                UIColor.white.withAlphaComponent(0.9),
-                UIColor.black,
-                UIColor.gray
+                UIColor(red: 0.15, green: 0.15, blue: 0.15, alpha: 1.0),
+                UIColor.white,
+                UIColor.lightGray
             )
         case .minimal:
             return (
-                UIColor.systemBlue.withAlphaComponent(0.85),
+                UIColor(red: 1.0, green: 0.75, blue: 0.8, alpha: 1.0), // 粉色
                 UIColor.white,
-                UIColor.white.withAlphaComponent(0.8)
+                UIColor.white.withAlphaComponent(0.9)
             )
         case .colorful:
             return (
-                UIColor.systemOrange.withAlphaComponent(0.9),
-                UIColor.white,
-                UIColor.white.withAlphaComponent(0.85)
+                UIColor(red: 0.7, green: 0.85, blue: 1.0, alpha: 1.0), // 淡蓝色
+                UIColor(red: 0.2, green: 0.3, blue: 0.5, alpha: 1.0),
+                UIColor(red: 0.4, green: 0.5, blue: 0.7, alpha: 1.0)
             )
         }
     }
