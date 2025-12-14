@@ -152,7 +152,7 @@ struct HomeView: View {
     
     // MARK: - 底部控制区
     private var bottomControlsView: some View {
-        HStack(spacing: 40) {
+        HStack(alignment: .center, spacing: 40) {
             // 左箭头 - 前一天
             Button {
                 goToPreviousDay()
@@ -168,8 +168,9 @@ struct HomeView: View {
             }
             .disabled(isAnimating)
             
-            // 相机按钮
+            // 相机按钮（固定高度以对齐）
             cameraButton
+                .frame(height: 110)
             
             // 右箭头 - 后一天
             Button {
