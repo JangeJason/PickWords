@@ -568,9 +568,17 @@ struct RecognitionResultView: View {
     @State private var stickerOffset: CGFloat = 150
     @State private var contentOpacity: Double = 0
     @State private var showContent = false
+    @State private var showCollectionPicker = false
+    @State private var selectedCollectionId: UUID?
+    
+    @Query(sort: \Collection.createdAt, order: .reverse) private var collections: [Collection]
     
     private var displayImage: UIImage {
         extractedImage ?? originalImage
+    }
+    
+    private var selectedCollection: Collection? {
+        collections.first { $0.id == selectedCollectionId }
     }
     
     var body: some View {
@@ -695,43 +703,72 @@ struct RecognitionResultView: View {
     
     // MARK: - 底部按钮
     private var bottomButtons: some View {
-        HStack(spacing: 60) {
-            // 返回按钮
+        VStack(spacing: 20) {
+            // 收藏夹选择
             Button {
-                onRetry()
+                showCollectionPicker = true
             } label: {
-                Circle()
-                    .fill(AppTheme.secondaryBackground)
-                    .frame(width: 60, height: 60)
-                    .overlay(
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundStyle(AppTheme.textSecondary)
-                    )
+                HStack(spacing: 8) {
+                    Text("📁")
+                    if let collection = selectedCollection {
+                        Text(collection.icon)
+                        Text(collection.name)
+                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                    } else {
+                        Text("选择收藏夹（可选）")
+                            .font(.system(size: 15, design: .rounded))
+                    }
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12))
+                }
+                .foregroundStyle(AppTheme.textSecondary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(AppTheme.cardBackground)
+                .clipShape(Capsule())
             }
             
-            // 保存按钮
-            Button {
-                onSave(nil)
-            } label: {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [AppTheme.pink, Color(hex: "FF8FAB")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+            HStack(spacing: 60) {
+                // 返回按钮
+                Button {
+                    onRetry()
+                } label: {
+                    Circle()
+                        .fill(AppTheme.secondaryBackground)
+                        .frame(width: 60, height: 60)
+                        .overlay(
+                            Image(systemName: "arrow.counterclockwise")
+                                .font(.system(size: 22, weight: .medium))
+                                .foregroundStyle(AppTheme.textSecondary)
                         )
-                    )
-                    .frame(width: 72, height: 72)
-                    .overlay(
-                        Image(systemName: "square.and.arrow.down")
-                            .font(.system(size: 26, weight: .bold))
-                            .foregroundStyle(.white)
-                    )
-                    .shadow(color: AppTheme.pink.opacity(0.4), radius: 12, y: 6)
+                }
+                
+                // 保存按钮
+                Button {
+                    onSave(selectedCollectionId)
+                } label: {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [AppTheme.pink, Color(hex: "FF8FAB")],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 72, height: 72)
+                        .overlay(
+                            Image(systemName: "square.and.arrow.down")
+                                .font(.system(size: 26, weight: .bold))
+                                .foregroundStyle(.white)
+                        )
+                        .shadow(color: AppTheme.pink.opacity(0.4), radius: 12, y: 6)
+                }
             }
         }
         .padding(.bottom, 50)
+        .sheet(isPresented: $showCollectionPicker) {
+            SaveCollectionPickerView(selectedId: $selectedCollectionId)
+        }
     }
     
     // MARK: - 动画序列
@@ -755,7 +792,93 @@ struct RecognitionResultView: View {
     }
 }
 
-// MARK: - 收藏集选择器
+// MARK: - 保存时收藏夹选择器
+struct SaveCollectionPickerView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var selectedId: UUID?
+    
+    @Query(sort: \Collection.createdAt, order: .reverse) private var collections: [Collection]
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AppTheme.background.ignoresSafeArea()
+                
+                if collections.isEmpty {
+                    VStack(spacing: 16) {
+                        Text("📁")
+                            .font(.system(size: 50))
+                        Text("暂无收藏夹")
+                            .font(.system(size: 18, weight: .medium, design: .rounded))
+                            .foregroundStyle(AppTheme.textSecondary)
+                        Text("请先在收藏夹页面创建")
+                            .font(.system(size: 14, design: .rounded))
+                            .foregroundStyle(AppTheme.textSecondary.opacity(0.7))
+                    }
+                } else {
+                    List {
+                        // 不归类选项
+                        Button {
+                            selectedId = nil
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Text("📋")
+                                    .font(.system(size: 24))
+                                Text("不归类")
+                                    .font(.system(size: 16, design: .rounded))
+                                    .foregroundStyle(AppTheme.textPrimary)
+                                Spacer()
+                                if selectedId == nil {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(AppTheme.pink)
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        
+                        // 收藏夹列表
+                        ForEach(collections) { collection in
+                            Button {
+                                selectedId = collection.id
+                                dismiss()
+                            } label: {
+                                HStack {
+                                    Text(collection.icon)
+                                        .font(.system(size: 24))
+                                    Text(collection.name)
+                                        .font(.system(size: 16, design: .rounded))
+                                        .foregroundStyle(AppTheme.textPrimary)
+                                    Spacer()
+                                    if selectedId == collection.id {
+                                        Image(systemName: "checkmark")
+                                            .foregroundStyle(AppTheme.pink)
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+                }
+            }
+            .navigationTitle("📁 选择收藏夹")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("完成") {
+                        dismiss()
+                    }
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(AppTheme.pink)
+                }
+            }
+        }
+        .tint(AppTheme.pink)
+    }
+}
+
+// MARK: - 收藏集选择器（旧版）
 struct CollectionPickerView: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var selectedId: UUID?
