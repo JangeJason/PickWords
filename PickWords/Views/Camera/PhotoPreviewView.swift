@@ -595,12 +595,25 @@ struct RecognitionResultView: View {
                 }
                 .offset(y: stickerOffset)
                 
-                // 音标
-                Text(result.phonetic)
-                    .font(.system(size: 18, design: .rounded))
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .padding(.top, 30)
-                    .opacity(contentOpacity)
+                // 音标 + 发音按钮
+                HStack(spacing: 12) {
+                    Text(result.phonetic)
+                        .font(.system(size: 18, design: .rounded))
+                        .foregroundStyle(AppTheme.textSecondary)
+                    
+                    Button {
+                        SpeechService.shared.speak(result.word)
+                    } label: {
+                        Image(systemName: "speaker.wave.2.fill")
+                            .font(.system(size: 18))
+                            .foregroundStyle(AppTheme.pink)
+                            .padding(8)
+                            .background(AppTheme.pink.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                }
+                .padding(.top, 30)
+                .opacity(contentOpacity)
                 
                 // 例句区域
                 exampleSection

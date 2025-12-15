@@ -207,9 +207,23 @@ struct WordCardDetailView: View {
                         VStack(spacing: 20) {
                             // 单词和音标
                             VStack(spacing: 8) {
-                                Text(wordCard.word)
-                                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                                    .foregroundStyle(AppTheme.pink)
+                                HStack(spacing: 12) {
+                                    Text(wordCard.word)
+                                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                                        .foregroundStyle(AppTheme.pink)
+                                    
+                                    // 发音按钮
+                                    Button {
+                                        SpeechService.shared.speak(wordCard.word)
+                                    } label: {
+                                        Image(systemName: "speaker.wave.2.fill")
+                                            .font(.system(size: 20))
+                                            .foregroundStyle(AppTheme.pink)
+                                            .padding(8)
+                                            .background(AppTheme.pink.opacity(0.1))
+                                            .clipShape(Circle())
+                                    }
+                                }
                                 
                                 Text(wordCard.phonetic)
                                     .font(.system(size: 17, design: .rounded))

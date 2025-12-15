@@ -314,10 +314,23 @@ struct DailyReviewView: View {
                             VStack(spacing: 12) {
                                 Divider()
                                 
-                                // 英文单词
-                                Text(card.word)
-                                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                                    .foregroundStyle(AppTheme.pink)
+                                // 英文单词 + 发音按钮
+                                HStack(spacing: 12) {
+                                    Text(card.word)
+                                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                                        .foregroundStyle(AppTheme.pink)
+                                    
+                                    Button {
+                                        SpeechService.shared.speak(card.word)
+                                    } label: {
+                                        Image(systemName: "speaker.wave.2.fill")
+                                            .font(.system(size: 18))
+                                            .foregroundStyle(AppTheme.pink)
+                                            .padding(8)
+                                            .background(AppTheme.pink.opacity(0.1))
+                                            .clipShape(Circle())
+                                    }
+                                }
                                 
                                 // 音标
                                 Text(card.phonetic)
