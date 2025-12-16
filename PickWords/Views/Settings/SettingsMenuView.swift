@@ -315,10 +315,13 @@ struct DailyReviewView: View {
                                 Divider()
                                 
                                 // 英文单词 + 发音按钮
-                                HStack(spacing: 12) {
+                                HStack(alignment: .top, spacing: 12) {
                                     Text(card.word)
                                         .font(.system(size: 32, weight: .bold, design: .rounded))
                                         .foregroundStyle(AppTheme.pink)
+                                        .lineLimit(nil)
+                                        .multilineTextAlignment(.center)
+                                        .fixedSize(horizontal: false, vertical: true)
                                     
                                     Button {
                                         SpeechService.shared.speak(card.word)
@@ -330,6 +333,7 @@ struct DailyReviewView: View {
                                             .background(AppTheme.pink.opacity(0.1))
                                             .clipShape(Circle())
                                     }
+                                    .padding(.top, 4)
                                 }
                                 
                                 // 音标
