@@ -137,6 +137,7 @@ struct HomeView: View {
                 wordCardsGrid
             }
         }
+        .scrollIndicators(.hidden)
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 24)
