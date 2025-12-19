@@ -244,6 +244,7 @@ struct DailyReviewRow: View {
 
 // MARK: - 日期复习详情页
 struct DailyReviewView: View {
+    @Environment(\.dismiss) private var dismiss
     let date: Date
     let wordCards: [WordCard]
     
@@ -393,7 +394,9 @@ struct DailyReviewView: View {
                         
                         // 下一个
                         Button {
-                            if currentIndex < wordCards.count - 1 {
+                            if currentIndex >= wordCards.count - 1 {
+                                dismiss()
+                            } else {
                                 withAnimation {
                                     currentIndex += 1
                                     showAnswer = false
@@ -404,13 +407,11 @@ struct DailyReviewView: View {
                                 .fill(AppTheme.pink)
                                 .frame(width: 56, height: 56)
                                 .overlay(
-                                    Image(systemName: "arrow.right")
+                                    Image(systemName: currentIndex >= wordCards.count - 1 ? "arrow.uturn.left" : "arrow.right")
                                         .font(.system(size: 20, weight: .medium))
                                         .foregroundStyle(.white)
                                 )
                         }
-                        .disabled(currentIndex >= wordCards.count - 1)
-                        .opacity(currentIndex >= wordCards.count - 1 ? 0.5 : 1)
                     } else {
                         // 显示答案
                         Button {
