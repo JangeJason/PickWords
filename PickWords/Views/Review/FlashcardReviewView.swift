@@ -188,6 +188,27 @@ struct FlashcardReviewView: View {
                     .font(.system(size: 13, design: .rounded))
                     .foregroundStyle(AppTheme.textSecondary)
                     .multilineTextAlignment(.center)
+
+                if !card.verbPhrases.isEmpty {
+                    Divider()
+                        .background(AppTheme.lavender)
+                        .padding(.top, 6)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(card.verbPhrases.prefix(3), id: \.self) { item in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(item.phrase)
+                                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                                    .foregroundStyle(AppTheme.textPrimary)
+
+                                Text(item.translation)
+                                    .font(.system(size: 12, design: .rounded))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
             .padding(.horizontal)
         }

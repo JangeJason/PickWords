@@ -8,6 +8,12 @@ struct RecognitionResult: Codable {
     let translation: String       // 中文释义
     let exampleSentence: String   // 英文例句
     let exampleTranslation: String // 例句中文翻译
+    let verbPhrases: [VerbPhrase]?
+}
+
+struct VerbPhrase: Codable, Hashable {
+    let phrase: String
+    let translation: String
 }
 
 /// 通义千问 VL 服务
@@ -70,6 +76,8 @@ final class AIService {
         2. 如果是包装盒/瓶子，识别里面装的是什么
         3. 可以参考包装上的文字、图案、品牌来判断内容
         4. 单词应该具体、实用，能帮助用户学习真正有用的词汇
+        5. verbPhrases 请返回 4-6 条与该名词高度相关、常用且可操作的动词短语，避免重复
+        6. verbPhrases 的 phrase 请用英语动词短语（例如：wear the watch / put on the watch / check the watch），translation 给出对应中文翻译
 
         请返回以下 JSON 格式（只返回 JSON，不要其他内容）：
         {
@@ -77,7 +85,13 @@ final class AIService {
             "phonetic": "音标（国际音标格式）",
             "translation": "中文释义",
             "exampleSentence": "一个使用该单词的英文例句",
-            "exampleTranslation": "例句的中文翻译"
+            "exampleTranslation": "例句的中文翻译",
+            "verbPhrases": [
+                {
+                    "phrase": "与该名词相关的动词短语（英文）",
+                    "translation": "该动词短语的中文翻译"
+                }
+            ]
         }
         """
         

@@ -354,6 +354,25 @@ struct DailyReviewView: View {
                                     .font(.system(size: 13, design: .rounded))
                                     .foregroundStyle(AppTheme.textSecondary.opacity(0.8))
                                     .multilineTextAlignment(.center)
+
+                                if !card.verbPhrases.isEmpty {
+                                    Divider()
+
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        ForEach(card.verbPhrases.prefix(3), id: \.self) { item in
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(item.phrase)
+                                                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                                                    .foregroundStyle(AppTheme.textPrimary)
+
+                                                Text(item.translation)
+                                                    .font(.system(size: 13, design: .rounded))
+                                                    .foregroundStyle(AppTheme.textSecondary)
+                                            }
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                }
                             }
                             .transition(.opacity.combined(with: .move(edge: .bottom)))
                         }

@@ -28,11 +28,18 @@ final class WordCard {
     /// 例句中文翻译
     var exampleTranslation: String
     
+    var verbPhrasesJSON: String?
+    
     /// 所属收藏集 ID
     var collectionId: UUID?
     
     /// 创建时间
     var createdAt: Date
+    
+    var verbPhrases: [VerbPhrase] {
+        get { Self.decodeVerbPhrases(from: verbPhrasesJSON) }
+        set { verbPhrasesJSON = Self.encodeVerbPhrases(newValue) }
+    }
     
     init(
         imageData: Data,
@@ -41,6 +48,7 @@ final class WordCard {
         translation: String,
         exampleSentence: String,
         exampleTranslation: String,
+        verbPhrases: [VerbPhrase] = [],
         collectionId: UUID? = nil
     ) {
         self.id = UUID()
@@ -50,7 +58,19 @@ final class WordCard {
         self.translation = translation
         self.exampleSentence = exampleSentence
         self.exampleTranslation = exampleTranslation
+        self.verbPhrasesJSON = Self.encodeVerbPhrases(verbPhrases)
         self.collectionId = collectionId
         self.createdAt = Date()
+    }
+    
+    private static func encodeVerbPhrases(_ value: [VerbPhrase]) -> String? {
+        guard !value.isEmpty else { return nil }
+        guard let data = try? JSONEncoder().encode(value) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+    
+    private static func decodeVerbPhrases(from json: String?) -> [VerbPhrase] {
+        guard let json, let data = json.data(using: .utf8) else { return [] }
+        return (try? JSONDecoder().decode([VerbPhrase].self, from: data)) ?? []
     }
 }

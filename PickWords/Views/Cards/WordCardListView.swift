@@ -275,6 +275,34 @@ struct WordCardDetailView: View {
                                     .foregroundStyle(AppTheme.textSecondary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
+
+                            if !wordCard.verbPhrases.isEmpty {
+                                Divider()
+                                    .background(AppTheme.lavender.opacity(0.5))
+
+                                VStack(alignment: .leading, spacing: 10) {
+                                    HStack {
+                                        Text("🔤")
+                                        Text("动词搭配")
+                                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                                            .foregroundStyle(AppTheme.textSecondary)
+                                    }
+
+                                    ForEach(wordCard.verbPhrases.prefix(6), id: \.self) { item in
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(item.phrase)
+                                                .font(.system(size: 15, weight: .medium, design: .rounded))
+                                                .foregroundStyle(AppTheme.textPrimary)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                                            Text(item.translation)
+                                                .font(.system(size: 13, design: .rounded))
+                                                .foregroundStyle(AppTheme.textSecondary)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                        }
+                                    }
+                                }
+                            }
                             
                             Divider()
                                 .background(AppTheme.lavender.opacity(0.5))

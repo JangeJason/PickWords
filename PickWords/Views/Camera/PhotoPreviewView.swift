@@ -221,6 +221,7 @@ struct PhotoPreviewView: View {
             translation: result.translation,
             exampleSentence: result.exampleSentence,
             exampleTranslation: result.exampleTranslation,
+            verbPhrases: result.verbPhrases ?? [],
             collectionId: collectionId
         )
         
@@ -693,6 +694,25 @@ struct RecognitionResultView: View {
             Text(result.exampleTranslation)
                 .font(.system(size: 14, design: .rounded))
                 .foregroundStyle(AppTheme.textSecondary)
+
+            if let verbPhrases = result.verbPhrases, !verbPhrases.isEmpty {
+                Divider()
+                    .background(AppTheme.lavender)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(verbPhrases.prefix(4), id: \.self) { item in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.phrase)
+                                .font(.system(size: 15, weight: .medium, design: .rounded))
+                                .foregroundStyle(AppTheme.textPrimary)
+
+                            Text(item.translation)
+                                .font(.system(size: 13, design: .rounded))
+                                .foregroundStyle(AppTheme.textSecondary)
+                        }
+                    }
+                }
+            }
         }
         .padding(20)
         .background(AppTheme.cardBackground)
